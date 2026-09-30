@@ -21,6 +21,7 @@ import {
   type StretchId,
   getStretch,
 } from "@/lib/catalog";
+import { playHoldTick, primeHoldTick, shouldPlayHoldTick } from "@/lib/hold-tick";
 import { useStretch, type Side } from "@/lib/store";
 import { cn } from "cn";
 
@@ -88,6 +89,7 @@ export function SessionMove() {
       backHref="/"
       backLabel="Leave for later"
       nextLabel={last ? "Finish session" : "Next move"}
+      tick
       onCompleteHold={completeHold}
       onSetSide={setSide}
       onNext={() => {
@@ -133,6 +135,7 @@ export function LibraryMove({ stretchId }: { stretchId: string }) {
       backHref="/library"
       backLabel="Back to the library"
       nextLabel="Held"
+      tick={false}
       onCompleteHold={() => {
         setSides((current) =>
           stretch.sided
@@ -160,6 +163,7 @@ function MoveView({
   backHref,
   backLabel,
   nextLabel,
+  tick,
   onCompleteHold,
   onSetSide,
   onNext,
@@ -177,6 +181,7 @@ function MoveView({
   backHref: string;
   backLabel: string;
   nextLabel: string;
+  tick: boolean;
   onCompleteHold: () => void;
   onSetSide: (side: Side) => void;
   onNext: (() => void) | null;
@@ -259,6 +264,7 @@ function MoveView({
             needsOther={needsOther}
             otherSide={otherSide}
             nextLabel={nextLabel}
+            tick={tick}
             onCompleteHold={onCompleteHold}
             onSwitch={() => onSetSide(otherSide)}
             onNext={onNext}
@@ -328,6 +334,7 @@ function HoldControls({
   needsOther,
   otherSide,
   nextLabel,
+  tick,
   onCompleteHold,
   onSwitch,
   onNext,
@@ -339,6 +346,7 @@ function HoldControls({
   needsOther: boolean;
   otherSide: Side;
   nextLabel: string;
+  tick: boolean;
   onCompleteHold: () => void;
   onSwitch: () => void;
   onNext: (() => void) | null;
@@ -347,6 +355,7 @@ function HoldControls({
   const [running, setRunning] = useState(false);
   const [timerKey, setTimerKey] = useState(resetKey);
   const doneRef = useRef(false);
+  const remainingRef = useRef(remaining);
 
   if (timerKey !== resetKey) {
     setTimerKey(resetKey);
@@ -357,6 +366,32 @@ function HoldControls({
   useEffect(() => {
     doneRef.current = false;
   }, [resetKey]);
+
+  useEffect(() => {
+    remainingRef.current = remaining;
+  }, [remaining]);
+
+  useEffect(() => {
+    if (!tick) return;
+    primeHoldTick();
+  }, [tick]);
+
+  useEffect(() => {
+    if (!running || !tick) return;
+    const id = window.setInterval(() => {
+      if (
+        shouldPlayHoldTick({
+          running: true,
+          audible: tick,
+          remaining: remainingRef.current,
+          starting: false,
+        })
+      ) {
+        playHoldTick();
+      }
+    }, 1000);
+    return () => window.clearInterval(id);
+  }, [running, tick]);
 
   useEffect(() => {
     if (!running) return;
@@ -387,6 +422,20 @@ function HoldControls({
     }
   }
 
+  function startHold() {
+    if (
+      shouldPlayHoldTick({
+        running: true,
+        audible: tick,
+        remaining,
+        starting: true,
+      })
+    ) {
+      playHoldTick();
+    }
+    setRunning(true);
+  }
+
   const clock = (
     <p className="font-heading text-6xl tabular-nums leading-none" aria-live="polite">
       {formatHold(remaining)}
@@ -396,7 +445,7 @@ function HoldControls({
   const actions = (
     <div className="flex flex-wrap gap-2">
       {!sideDone && !running && (
-        <Button type="button" size="lg" onClick={() => setRunning(true)}>
+        <Button type="button" size="lg" onClick={startHold}>
           Start hold
         </Button>
       )}
