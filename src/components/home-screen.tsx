@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { StretchFigure } from "@/components/stretch-figure";
 import { SetupScreen } from "@/components/setup-screen";
+import { WeekStrip } from "@/components/week-strip";
 import { Button, buttonVariants } from "@/components/ui/button";
 import {
   Dialog,
@@ -30,10 +31,10 @@ import {
   isoDate,
   lengthNote,
   nextStretchDate,
+  recentAreas,
   sessionMoveIds,
-  shortFocus,
-  startOfToday,
   weekDates,
+  startOfToday,
   weekdayName,
 } from "@/lib/plan";
 import { useStretch } from "@/lib/store";
@@ -92,6 +93,7 @@ function TodayHome({ onEditSetup }: { onEditSetup: () => void }) {
     today,
   );
   const hasFinished = finished.length > 0;
+  const weekAreas = recentAreas(finished, today);
   const restPreview = viewingRest && !actual.rest;
   const restDate = weekDates(today).find((date) => date.getDay() === settings.restDay) ?? today;
   const nextStretch = nextStretchDate(showRest ? restDate : today, settings.restDay);
@@ -243,8 +245,9 @@ function TodayHome({ onEditSetup }: { onEditSetup: () => void }) {
       <WeekStrip
         today={today}
         restDay={settings.restDay}
+        tightAreas={settings.tightAreas}
         finishedDates={finished.map((entry) => entry.date)}
-        settingsRestPreview={viewingRest}
+        selected={showRest ? "rest" : "today"}
         onSelectToday={() => setViewingRest(false)}
         onSelectRest={() => setViewingRest(true)}
       />
@@ -252,10 +255,17 @@ function TodayHome({ onEditSetup }: { onEditSetup: () => void }) {
       <section className="mt-8 rounded-[1.75rem] border border-border bg-card p-5">
         <h2 className="font-heading text-2xl">This week</h2>
         {hasFinished ? (
-          <p className="mt-2 text-base leading-relaxed">
-            Streak: {streak} {streak === 1 ? "day" : "days"}. Rest day does not break
-            it. A missed stretch day does.
-          </p>
+          <>
+            <p className="mt-2 text-base leading-relaxed">
+              Streak: {streak} {streak === 1 ? "day" : "days"}. Rest day does not break
+              it. A missed stretch day does.
+            </p>
+            {weekAreas.length > 0 && (
+              <p className="mt-2 text-base leading-relaxed">
+                Areas these seven days: {weekAreas.join(", ")}.
+              </p>
+            )}
+          </>
         ) : (
           <p className="mt-2 max-w-xl text-base leading-relaxed">
             No sessions yet. Finish today’s session and the streak starts. A missed
@@ -344,89 +354,6 @@ function RestHome({
           {loosenActive ? "Resume the loosen" : "Start the loosen"}
         </Button>
       </div>
-    </section>
-  );
-}
-
-function WeekStrip({
-  today,
-  restDay,
-  finishedDates,
-  settingsRestPreview,
-  onSelectToday,
-  onSelectRest,
-}: {
-  today: Date;
-  restDay: number;
-  finishedDates: string[];
-  settingsRestPreview: boolean;
-  onSelectToday: () => void;
-  onSelectRest: () => void;
-}) {
-  const days = weekDates(today);
-  const todayKey = isoDate(today);
-  return (
-    <section className="mt-8">
-      <div className="flex items-baseline justify-between gap-3">
-        <h2 className="font-heading text-2xl">Week</h2>
-        <p className="text-sm text-muted-foreground">
-          Tap {weekdayName(restDay)} for the rest day.
-        </p>
-      </div>
-      <ol className="mt-3 grid grid-cols-7 gap-1.5 sm:gap-2">
-        {days.map((date) => {
-          const key = isoDate(date);
-          const isToday = key === todayKey;
-          const isRest = date.getDay() === restDay;
-          const done = finishedDates.includes(key);
-          const selected = isRest ? settingsRestPreview || (isToday && isRest) : isToday && !settingsRestPreview;
-          const label = `${weekdayName(date.getDay())}${isToday ? ", today" : ""}${isRest ? ", rest day" : ""}`;
-          const inner = (
-            <>
-              <span className="text-xs sm:text-sm">{weekdayName(date.getDay()).slice(0, 3)}</span>
-              <span className="font-heading text-lg sm:text-xl">{date.getDate()}</span>
-              <span
-                className={cn(
-                  "mt-1 h-1.5 w-1.5 rounded-full",
-                  done ? "bg-primary" : isRest ? "border border-primary" : "bg-transparent",
-                )}
-                aria-hidden
-              />
-            </>
-          );
-          if (isToday || isRest) {
-            return (
-              <li key={key}>
-                <button
-                  type="button"
-                  aria-label={label}
-                  aria-pressed={selected}
-                  onClick={isRest ? onSelectRest : onSelectToday}
-                  className={cn(
-                    "flex min-h-16 w-full flex-col items-center justify-center rounded-xl border text-center",
-                    selected ? "border-primary bg-card" : "border-border bg-card/60",
-                  )}
-                >
-                  {inner}
-                </button>
-              </li>
-            );
-          }
-          return (
-            <li key={key}>
-              <div
-                className="flex min-h-16 flex-col items-center justify-center rounded-xl border border-transparent text-center text-muted-foreground"
-                title={shortFocus(
-                  focusFor(date, { restDay, tightAreas: [] }).label,
-                  false,
-                )}
-              >
-                {inner}
-              </div>
-            </li>
-          );
-        })}
-      </ol>
     </section>
   );
 }

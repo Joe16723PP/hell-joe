@@ -23,15 +23,13 @@ export type Focus = {
   rest: boolean;
 };
 
-const ROTATION: Record<number, { label: string; presetId: PresetId }> = {
-  0: { label: "Rest", presetId: "hips-and-back" },
-  1: { label: "Neck and shoulders", presetId: "desk-reset" },
-  2: { label: "Back", presetId: "hips-and-back" },
-  3: { label: "Hips", presetId: "hips-and-back" },
-  4: { label: "Legs", presetId: "after-sitting" },
-  5: { label: "Full body", presetId: "morning-loosen" },
-  6: { label: "Full body", presetId: "morning-loosen" },
-};
+const ROTATION: { label: string; presetId: PresetId }[] = [
+  { label: "Neck and shoulders", presetId: "desk-reset" },
+  { label: "Hips", presetId: "hips-and-back" },
+  { label: "Back", presetId: "hips-and-back" },
+  { label: "Legs", presetId: "after-sitting" },
+  { label: "Full body", presetId: "morning-loosen" },
+];
 
 export function isoDate(date: Date): string {
   const year = date.getFullYear();
@@ -70,6 +68,39 @@ function presetForTight(id: TightId): PresetId {
   return "hips-and-back";
 }
 
+function tightLabel(id: TightId): string {
+  if (id === "neck-shoulders") return "Neck and shoulders";
+  if (id === "back") return "Back";
+  if (id === "hips") return "Hips";
+  return "Legs";
+}
+
+export function weekDates(today: Date): Date[] {
+  const day = today.getDay();
+  const mondayOffset = day === 0 ? -6 : 1 - day;
+  const monday = addDays(today, mondayOffset);
+  return Array.from({ length: 7 }, (_, index) => addDays(monday, index));
+}
+
+export function stretchIndex(date: Date, restDay: number): number {
+  const key = isoDate(date);
+  let index = 0;
+  for (const cursor of weekDates(date)) {
+    if (cursor.getDay() === restDay) continue;
+    if (isoDate(cursor) === key) return index;
+    index += 1;
+  }
+  return 0;
+}
+
+function extraTight(date: Date, tightAreas: TightId[]): TightId | null {
+  if (tightAreas.length === 0) return null;
+  const utc = Date.UTC(date.getFullYear(), date.getMonth(), date.getDate());
+  const weeks = Math.floor(utc / (7 * 24 * 60 * 60 * 1000));
+  const index = ((weeks % tightAreas.length) + tightAreas.length) % tightAreas.length;
+  return tightAreas[index] ?? null;
+}
+
 export function focusFor(
   date: Date,
   settings: Pick<Settings, "restDay" | "tightAreas">,
@@ -77,19 +108,15 @@ export function focusFor(
   if (date.getDay() === settings.restDay) {
     return { label: "Rest", presetId: "hips-and-back", rest: true };
   }
-  if (date.getDay() === 6 && settings.tightAreas.length > 0) {
-    const tight = settings.tightAreas[0];
-    const label =
-      tight === "neck-shoulders"
-        ? "Neck and shoulders"
-        : tight === "back"
-          ? "Back"
-          : tight === "hips"
-            ? "Hips"
-            : "Legs";
-    return { label, presetId: presetForTight(tight), rest: false };
+  const index = stretchIndex(date, settings.restDay);
+  if (index >= ROTATION.length) {
+    const tight = extraTight(date, settings.tightAreas);
+    if (!tight) {
+      return { label: "Full body", presetId: "morning-loosen", rest: false };
+    }
+    return { label: tightLabel(tight), presetId: presetForTight(tight), rest: false };
   }
-  const slot = ROTATION[date.getDay()] ?? ROTATION[3];
+  const slot = ROTATION[index] ?? ROTATION[0];
   return { label: slot.label, presetId: slot.presetId, rest: false };
 }
 
@@ -98,13 +125,6 @@ export function shortFocus(label: string, rest: boolean): string {
   if (label === "Neck and shoulders") return "Neck";
   if (label === "Full body") return "Full";
   return label;
-}
-
-export function weekDates(today: Date): Date[] {
-  const day = today.getDay();
-  const mondayOffset = day === 0 ? -6 : 1 - day;
-  const monday = addDays(today, mondayOffset);
-  return Array.from({ length: 7 }, (_, index) => addDays(monday, index));
 }
 
 export function nextStretchDate(from: Date, restDay: number): Date {
@@ -147,6 +167,22 @@ export function currentStreak(
     break;
   }
   return count;
+}
+
+export function recentAreas(
+  finished: { date: string; areas: string[] }[],
+  today: Date,
+): string[] {
+  const start = isoDate(addDays(today, -6));
+  const end = isoDate(today);
+  const seen: string[] = [];
+  for (const entry of finished) {
+    if (entry.date < start || entry.date > end) continue;
+    for (const area of entry.areas) {
+      if (!seen.includes(area)) seen.push(area);
+    }
+  }
+  return seen;
 }
 
 export function suggestedPresetId(today: Date, settings: Settings): PresetId {

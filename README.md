@@ -1,8 +1,8 @@
 # Stretchday
 
-A clickable design prototype of Stretchday, a short daily stretch guide. Still drawings show each move, the muscle it reaches, three steps, and the usual mistake.
+Stretchday is a short daily stretch in the browser. Open it and today’s session is ready: still drawings, the muscle to feel, three steps, and a hold timer. Finish, and the streak stays on this browser. There is no account and no video.
 
-This is not the full product. There is no account, no real notifications, and no backend that schedules a full stretch catalog. Choices and progress stay in this browser.
+A stretch should feel like steady tension. Pain means stop. This is a mobility habit, not medical advice.
 
 ## Run locally
 
@@ -13,14 +13,16 @@ npm run dev
 
 The dev server listens on [http://127.0.0.1:47213](http://127.0.0.1:47213).
 
-## What you can click through
+## What you can do
 
-- A first-run setup: session length, tight areas, and rest day
-- Home for a stretch day, including a 5 / 10 / 15 minute switch and a preset swap
-- A rest-day home, from the week strip
-- One move at a time: hold drawing, muscle names, steps, timer, left and right, and check your form
-- A library of eight stretches, filtered by area and position
-- A short recap after the session
+- Set session length, tight areas, and a rest day once. Change them later from home.
+- Start today’s session, switch the length, or swap the preset before you begin.
+- Hold, add 15 seconds, finish early, switch sides, or skip a move for one alternate.
+- Browse the library by area, position, and whether a stretch needs both sides. Opening one does not replace today.
+- Finish into a recap. The week and the streak stay after a reload.
+- Turn on one reminder for stretch days. It uses the browser’s notifications if you allow them. Rest day stays quiet.
+
+Progress is saved in this browser’s localStorage.
 
 ## Stack
 

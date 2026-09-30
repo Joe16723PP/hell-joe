@@ -1,12 +1,14 @@
 "use client";
 
 import Link from "next/link";
+import { WeekStrip } from "@/components/week-strip";
 import { buttonVariants } from "@/components/ui/button";
+import { focusFor, startOfToday } from "@/lib/plan";
 import { useStretch } from "@/lib/store";
 import { cn } from "cn";
 
 export function RecapScreen() {
-  const { ready, recap } = useStretch();
+  const { ready, recap, settings, finished } = useStretch();
 
   if (!ready) {
     return (
@@ -93,6 +95,14 @@ export function RecapScreen() {
           </ul>
         </section>
       )}
+
+      <WeekStrip
+        today={startOfToday()}
+        restDay={settings.restDay}
+        tightAreas={settings.tightAreas}
+        finishedDates={finished.map((entry) => entry.date)}
+        selected={focusFor(startOfToday(), settings).rest ? "rest" : "today"}
+      />
 
       <p className="mt-8 text-lg">{recap.tomorrow}</p>
 

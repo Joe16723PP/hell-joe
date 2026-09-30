@@ -1,12 +1,21 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useState, useSyncExternalStore, type FormEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { TIGHT_OPTIONS, WEEKDAY_NAMES, type LengthMin, type TightId } from "@/lib/catalog";
 import type { Settings } from "@/lib/plan";
 import { useStretch } from "@/lib/store";
 import { cn } from "cn";
+
+function subscribePermission() {
+  return () => {};
+}
+
+function readNotificationPermission(): NotificationPermission | "unsupported" {
+  if (typeof Notification === "undefined") return "unsupported";
+  return Notification.permission;
+}
 
 const LENGTHS: { value: LengthMin; detail: string }[] = [
   { value: 5, detail: "about 4 moves" },
@@ -27,6 +36,26 @@ export function SetupScreen({
   const [restDay, setRestDay] = useState(settings.restDay);
   const [reminderOn, setReminderOn] = useState(settings.reminderOn);
   const [reminderTime, setReminderTime] = useState(settings.reminderTime || "08:00");
+  const [permissionOverride, setPermissionOverride] = useState<
+    NotificationPermission | "unsupported" | null
+  >(null);
+  const browserPermission = useSyncExternalStore(
+    subscribePermission,
+    readNotificationPermission,
+    () => "default" as const,
+  );
+  const permission = permissionOverride ?? browserPermission;
+
+  async function toggleReminder(next: boolean) {
+    setReminderOn(next);
+    if (!next || typeof Notification === "undefined") return;
+    if (Notification.permission === "granted" || Notification.permission === "denied") {
+      setPermissionOverride(Notification.permission);
+      return;
+    }
+    const result = await Notification.requestPermission();
+    setPermissionOverride(result);
+  }
 
   function toggleTight(id: TightId) {
     setTightAreas((current) =>
@@ -134,14 +163,26 @@ export function SetupScreen({
             <input
               type="checkbox"
               checked={reminderOn}
-              onChange={(event) => setReminderOn(event.target.checked)}
+              onChange={(event) => {
+                void toggleReminder(event.target.checked);
+              }}
               className="mt-1 size-5 accent-[#8f3d2c]"
             />
             <span>
-              Remind me on stretch days. Rest day sends nothing. This preview does
-              not send a real notification.
+              Remind me on stretch days, once, at the time below. Rest day sends
+              nothing. The browser asks before it can notify you.
             </span>
           </label>
+          {reminderOn && permission === "denied" && (
+            <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+              Notifications are blocked in this browser. The home screen is the reminder.
+            </p>
+          )}
+          {reminderOn && permission === "unsupported" && (
+            <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+              This browser does not offer notifications. The home screen is the reminder.
+            </p>
+          )}
           <div className="mt-4 max-w-xs">
             <label htmlFor="reminder-time" className="text-sm text-muted-foreground">
               Time

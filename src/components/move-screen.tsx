@@ -14,6 +14,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import {
+  alternateFor,
   holdSecondsForLength,
   positionLabel,
   type Stretch,
@@ -63,7 +64,7 @@ export function SessionMove() {
   }
 
   const sides = session.sides[stretch.id] ?? { left: false, right: false };
-  const alternate = stretch.alternate ? getStretch(stretch.alternate) ?? null : null;
+  const alternate = alternateFor(stretch.id, session.moveIds);
   const seconds = session.kind === "loosen" ? 30 : holdSecondsForLength(session.length);
   const last = session.index === session.moveIds.length - 1;
 
@@ -112,7 +113,7 @@ export function LibraryMove({ stretchId }: { stretchId: string }) {
     return (
       <main className="mx-auto max-w-xl px-4 py-16">
         <h1 className="font-heading text-4xl">That stretch is not in this set</h1>
-        <p className="mt-3 text-lg">The library here has eight stretches.</p>
+        <p className="mt-3 text-lg">That one is not in the library.</p>
         <Link href="/library" className={cn(buttonVariants({ size: "lg" }), "mt-6 inline-flex")}>
           Back to the library
         </Link>

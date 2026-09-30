@@ -24,7 +24,7 @@ import {
   type Settings,
 } from "@/lib/plan";
 
-const STORAGE_KEY = "stretchday-prototype-v1";
+const STORAGE_KEY = "stretchday-v1";
 
 export type Side = "left" | "right";
 
@@ -69,6 +69,7 @@ type Data = {
   session: Session | null;
   finished: FinishedSession[];
   recap: Recap | null;
+  lastReminder: string | null;
 };
 
 type Store = {
@@ -78,6 +79,7 @@ type Store = {
   session: Session | null;
   finished: FinishedSession[];
   recap: Recap | null;
+  lastReminder: string | null;
   viewingRest: boolean;
   setViewingRest: (value: boolean) => void;
   saveSetup: (settings: Settings) => void;
@@ -90,6 +92,7 @@ type Store = {
   advance: () => void;
   skip: () => void;
   useAlternate: (id: StretchId) => void;
+  markReminded: (date: string) => void;
 };
 
 const DEFAULT_SETTINGS: Settings = {
@@ -101,23 +104,56 @@ const DEFAULT_SETTINGS: Settings = {
   reminderTime: "08:00",
 };
 
-const INITIAL: Data = {
+const SERVER_SNAPSHOT: Data = {
   settings: DEFAULT_SETTINGS,
   plan: null,
   session: null,
   finished: [],
   recap: null,
+  lastReminder: null,
 };
 
 const StretchContext = createContext<Store | null>(null);
+
+function sanitizeSettings(value: Partial<Settings> | undefined): Settings {
+  const length = value?.length === 5 || value?.length === 15 ? value.length : 10;
+  const restDay =
+    typeof value?.restDay === "number" && value.restDay >= 0 && value.restDay <= 6
+      ? value.restDay
+      : 0;
+  const tightAreas = Array.isArray(value?.tightAreas)
+    ? value.tightAreas.filter(
+        (item): item is Settings["tightAreas"][number] =>
+          item === "neck-shoulders" || item === "back" || item === "hips" || item === "legs",
+      )
+    : [];
+  return {
+    setupDone: Boolean(value?.setupDone),
+    length,
+    tightAreas,
+    restDay,
+    reminderOn: Boolean(value?.reminderOn),
+    reminderTime: value?.reminderTime || "08:00",
+  };
+}
 
 function readStorage(): Data | null {
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
     if (!raw) return null;
-    const parsed = JSON.parse(raw) as Data;
+    const parsed = JSON.parse(raw) as Partial<Data>;
     if (!parsed.settings) return null;
-    return parsed;
+    return {
+      settings: sanitizeSettings(parsed.settings),
+      plan:
+        parsed.plan && parsed.plan.date && parsed.plan.presetId
+          ? { date: parsed.plan.date, presetId: parsed.plan.presetId }
+          : null,
+      session: parsed.session ?? null,
+      finished: Array.isArray(parsed.finished) ? parsed.finished : [],
+      recap: parsed.recap ?? null,
+      lastReminder: typeof parsed.lastReminder === "string" ? parsed.lastReminder : null,
+    };
   } catch {
     return null;
   }
@@ -127,13 +163,17 @@ function emptySides() {
   return { left: false, right: false };
 }
 
-let snapshot: Data = INITIAL;
+let snapshot: Data = SERVER_SNAPSHOT;
 let clientReady = false;
 const listeners = new Set<() => void>();
 
 function subscribe(listener: () => void) {
   listeners.add(listener);
   return () => listeners.delete(listener);
+}
+
+function subscribeHydrated() {
+  return () => {};
 }
 
 function remember(next: Data) {
@@ -143,7 +183,9 @@ function remember(next: Data) {
 }
 
 function update(recipe: (current: Data) => Data) {
-  remember(recipe(snapshot));
+  const next = recipe(snapshot);
+  if (next === snapshot) return;
+  remember(next);
 }
 
 function getSnapshot(): Data {
@@ -158,6 +200,7 @@ function getSnapshot(): Data {
         loaded.session.status === "active"
       ) {
         loaded.session = null;
+        window.localStorage.setItem(STORAGE_KEY, JSON.stringify(loaded));
       }
       snapshot = loaded;
     }
@@ -166,9 +209,10 @@ function getSnapshot(): Data {
 }
 
 export function StretchProvider({ children }: { children: ReactNode }) {
-  const data = useSyncExternalStore(subscribe, getSnapshot, () => INITIAL);
+  const data = useSyncExternalStore(subscribe, getSnapshot, () => SERVER_SNAPSHOT);
+  const hydrated = useSyncExternalStore(subscribeHydrated, () => true, () => false);
   const [viewingRest, setViewingRest] = useState(false);
-  const ready = true;
+  const ready = hydrated;
 
   const today = startOfToday();
   const todayKey = isoDate(today);
@@ -220,6 +264,7 @@ export function StretchProvider({ children }: { children: ReactNode }) {
       session: liveSession,
       finished: data.finished,
       recap: data.recap,
+      lastReminder: data.lastReminder,
       viewingRest,
       setViewingRest,
       saveSetup: (settings) => {
@@ -355,6 +400,12 @@ export function StretchProvider({ children }: { children: ReactNode }) {
           if (!session || session.status !== "active") return current;
           const moveIds = [...session.moveIds];
           moveIds[session.index] = id;
+          for (let index = session.index + 1; index < moveIds.length; index += 1) {
+            if (moveIds[index] === id) {
+              moveIds.splice(index, 1);
+              break;
+            }
+          }
           const sides = { ...session.sides };
           delete sides[id];
           return {
@@ -363,8 +414,14 @@ export function StretchProvider({ children }: { children: ReactNode }) {
           };
         });
       },
+      markReminded: (date) => {
+        update((current) => {
+          if (current.lastReminder === date) return current;
+          return { ...current, lastReminder: date };
+        });
+      },
     };
-    // finish is closed over inside the object; today is stable for the session.
+    // today is derived from todayKey for the open session.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data, planPresetId, ready, todayKey, viewingRest]);
 

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useStretchReminder } from "@/lib/reminder";
 import { useStretch } from "@/lib/store";
 import { cn } from "cn";
 
@@ -13,6 +14,7 @@ const LINKS = [
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { ready, settings } = useStretch();
+  useStretchReminder();
   const onMove =
     pathname.startsWith("/session") || /^\/library\/.+/.test(pathname);
   const showNav = ready && settings.setupDone && !onMove;
