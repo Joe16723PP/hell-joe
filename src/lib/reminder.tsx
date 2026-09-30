@@ -1,11 +1,13 @@
 "use client";
 
 import { useEffect } from "react";
+import { useI18n } from "@/lib/i18n/provider";
 import { focusFor, isoDate, startOfToday } from "@/lib/plan";
 import { useStretch } from "@/lib/store";
 
 export function useStretchReminder() {
   const { ready, settings, lastReminder, markReminded } = useStretch();
+  const { t, minutes } = useI18n();
 
   useEffect(() => {
     if (!ready || !settings.setupDone || !settings.reminderOn) return;
@@ -25,7 +27,7 @@ export function useStretchReminder() {
       if (lastReminder === key) return;
       try {
         new Notification("Stretchday", {
-          body: `Today's stretch is ready. About ${settings.length} minutes.`,
+          body: t("reminder.body", { minutes: minutes(settings.length) }),
         });
       } catch {
         return;
@@ -36,5 +38,5 @@ export function useStretchReminder() {
     tick();
     const id = window.setInterval(tick, 15000);
     return () => window.clearInterval(id);
-  }, [lastReminder, markReminded, ready, settings]);
+  }, [lastReminder, markReminded, minutes, ready, settings, t]);
 }

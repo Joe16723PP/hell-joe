@@ -20,7 +20,6 @@ import {
   isoDate,
   sessionMoveIds,
   startOfToday,
-  tomorrowLine,
   type Settings,
 } from "@/lib/plan";
 
@@ -54,7 +53,6 @@ export type Recap = {
   skipped: { id: string; name: string }[];
   areas: string[];
   streak: number;
-  tomorrow: string;
   counted: boolean;
 };
 
@@ -233,7 +231,7 @@ export function StretchProvider({ children }: { children: ReactNode }) {
         .map((stretch) => ({
           id: stretch.id,
           name: stretch.name,
-          area: stretch.areaLabel,
+          area: stretch.area,
         }));
       const skippedMoves = skipped
         .map((id) => getStretch(id))
@@ -252,7 +250,6 @@ export function StretchProvider({ children }: { children: ReactNode }) {
         skipped: skippedMoves,
         areas,
         streak: currentStreak(nextDates, data.settings.restDay, today),
-        tomorrow: tomorrowLine(today, data.settings),
         counted,
       };
     }

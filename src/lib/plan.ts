@@ -1,9 +1,9 @@
 import {
   PRESETS,
-  WEEKDAY_NAMES,
   type LengthMin,
   type PresetId,
   type TightId,
+  areaIdFrom,
   getPreset,
   movesForLength,
 } from "@/lib/catalog";
@@ -17,18 +17,20 @@ export type Settings = {
   reminderTime: string;
 };
 
+export type FocusKey = "neck-shoulders" | "hips" | "back" | "legs" | "full-body" | "rest";
+
 export type Focus = {
-  label: string;
+  key: FocusKey;
   presetId: PresetId;
   rest: boolean;
 };
 
-const ROTATION: { label: string; presetId: PresetId }[] = [
-  { label: "Neck and shoulders", presetId: "desk-reset" },
-  { label: "Hips", presetId: "hips-and-back" },
-  { label: "Back", presetId: "hips-and-back" },
-  { label: "Legs", presetId: "after-sitting" },
-  { label: "Full body", presetId: "morning-loosen" },
+const ROTATION: { key: FocusKey; presetId: PresetId }[] = [
+  { key: "neck-shoulders", presetId: "desk-reset" },
+  { key: "hips", presetId: "hips-and-back" },
+  { key: "back", presetId: "hips-and-back" },
+  { key: "legs", presetId: "after-sitting" },
+  { key: "full-body", presetId: "morning-loosen" },
 ];
 
 export function isoDate(date: Date): string {
@@ -50,29 +52,10 @@ export function startOfToday(): Date {
   return today;
 }
 
-export function weekdayName(day: number): string {
-  return WEEKDAY_NAMES[day] ?? "Sunday";
-}
-
-export function formatLongDate(date: Date): string {
-  return new Intl.DateTimeFormat("en-US", {
-    weekday: "long",
-    month: "long",
-    day: "numeric",
-  }).format(date);
-}
-
 function presetForTight(id: TightId): PresetId {
   if (id === "neck-shoulders") return "desk-reset";
   if (id === "legs") return "after-sitting";
   return "hips-and-back";
-}
-
-function tightLabel(id: TightId): string {
-  if (id === "neck-shoulders") return "Neck and shoulders";
-  if (id === "back") return "Back";
-  if (id === "hips") return "Hips";
-  return "Legs";
 }
 
 export function weekDates(today: Date): Date[] {
@@ -106,25 +89,18 @@ export function focusFor(
   settings: Pick<Settings, "restDay" | "tightAreas">,
 ): Focus {
   if (date.getDay() === settings.restDay) {
-    return { label: "Rest", presetId: "hips-and-back", rest: true };
+    return { key: "rest", presetId: "hips-and-back", rest: true };
   }
   const index = stretchIndex(date, settings.restDay);
   if (index >= ROTATION.length) {
     const tight = extraTight(date, settings.tightAreas);
     if (!tight) {
-      return { label: "Full body", presetId: "morning-loosen", rest: false };
+      return { key: "full-body", presetId: "morning-loosen", rest: false };
     }
-    return { label: tightLabel(tight), presetId: presetForTight(tight), rest: false };
+    return { key: tight, presetId: presetForTight(tight), rest: false };
   }
   const slot = ROTATION[index] ?? ROTATION[0];
-  return { label: slot.label, presetId: slot.presetId, rest: false };
-}
-
-export function shortFocus(label: string, rest: boolean): string {
-  if (rest) return "Rest";
-  if (label === "Neck and shoulders") return "Neck";
-  if (label === "Full body") return "Full";
-  return label;
+  return { key: slot.key, presetId: slot.presetId, rest: false };
 }
 
 export function nextStretchDate(from: Date, restDay: number): Date {
@@ -134,13 +110,6 @@ export function nextStretchDate(from: Date, restDay: number): Date {
     cursor = addDays(cursor, 1);
   }
   return cursor;
-}
-
-export function tomorrowLine(today: Date, settings: Settings): string {
-  const next = addDays(today, 1);
-  const focus = focusFor(next, settings);
-  if (focus.rest) return "Tomorrow: rest day.";
-  return `Tomorrow: ${focus.label.toLowerCase()}, about ${settings.length} minutes.`;
 }
 
 export function currentStreak(
@@ -178,7 +147,8 @@ export function recentAreas(
   const seen: string[] = [];
   for (const entry of finished) {
     if (entry.date < start || entry.date > end) continue;
-    for (const area of entry.areas) {
+    for (const value of entry.areas) {
+      const area = areaIdFrom(value) ?? value;
       if (!seen.includes(area)) seen.push(area);
     }
   }
@@ -194,8 +164,20 @@ export function sessionMoveIds(presetId: string, length: LengthMin): string[] {
   return movesForLength(preset.order, length);
 }
 
-export function lengthNote(moveCount: number, length: LengthMin): string | null {
+export function isShortPreset(moveCount: number, length: LengthMin): boolean {
   const expected = length === 5 ? 4 : length === 10 ? 6 : 8;
-  if (moveCount >= expected) return null;
-  return "This preset stays shorter. The holds run longer instead of adding moves.";
+  return moveCount < expected;
+}
+
+export function weekProgress(
+  today: Date,
+  restDay: number,
+  finishedDates: string[],
+): { done: number; total: number } {
+  const days = weekDates(today).filter((date) => date.getDay() !== restDay);
+  const finished = new Set(finishedDates);
+  return {
+    done: days.filter((date) => finished.has(isoDate(date))).length,
+    total: days.length,
+  };
 }

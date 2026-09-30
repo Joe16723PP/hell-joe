@@ -89,16 +89,6 @@ export const TIGHT_OPTIONS: { id: TightId; label: string }[] = [
   { id: "legs", label: "Legs" },
 ];
 
-export const WEEKDAY_NAMES = [
-  "Sunday",
-  "Monday",
-  "Tuesday",
-  "Wednesday",
-  "Thursday",
-  "Friday",
-  "Saturday",
-] as const;
-
 export const STRETCHES: Stretch[] = [
   {
     id: "neck",
@@ -662,10 +652,6 @@ export function getPreset(id: string): Preset | undefined {
   return presetMap.get(id as PresetId);
 }
 
-export function positionLabel(position: PositionId): string {
-  return POSITIONS.find((item) => item.id === position)?.label ?? position;
-}
-
 export function alternateFor(id: string, used: readonly string[]): Stretch | null {
   const stretch = getStretch(id);
   if (!stretch) return null;
@@ -688,4 +674,14 @@ export function holdSecondsForLength(length: LengthMin): number {
 export function movesForLength(order: StretchId[], length: LengthMin): StretchId[] {
   const count = length === 5 ? 4 : length === 10 ? 6 : 8;
   return order.slice(0, Math.min(count, order.length));
+}
+
+const AREA_BY_LABEL = new Map<string, AreaId>(
+  AREAS.map((item) => [item.label.toLowerCase(), item.id]),
+);
+
+/** Accepts an area id, or an English label saved by earlier versions. */
+export function areaIdFrom(value: string): AreaId | null {
+  if (AREAS.some((item) => item.id === value)) return value as AreaId;
+  return AREA_BY_LABEL.get(value.toLowerCase()) ?? null;
 }

@@ -16,10 +16,6 @@ export function shouldPauseForNextPose(input: {
   return input.poseComplete && input.canAdvance;
 }
 
-export function posePauseLabel(secondsLeft: number): string {
-  return `Next pose in ${secondsLeft}`;
-}
-
 export function stepPosePause(secondsLeft: number): { secondsLeft: number; advance: boolean } {
   if (secondsLeft <= 1) return { secondsLeft: 1, advance: true };
   return { secondsLeft: secondsLeft - 1, advance: false };
