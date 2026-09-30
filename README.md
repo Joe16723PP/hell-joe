@@ -32,6 +32,11 @@ Progress and the language choice are saved in this browser’s localStorage.
 - Thai text for the 24 stretches and 4 presets lives in `src/lib/i18n/catalog-th.ts`. English stays in `src/lib/catalog.ts`.
 - Components read copy through `useI18n()` from `src/lib/i18n/provider.tsx`. Dates and weekday names use `Intl` with `en-US` or `th-TH`.
 
+## Illustrations
+
+- Each stretch has a soft 3D render in `public/illustrations/{id}.webp` and a common-mistake render in `public/illustrations/{id}-mistake.webp`. The renders contain no text, so both languages share them.
+- The Check your form dialog draws arrows, dashed guide lines, and labels on top of the renders. Positions per stretch live in `src/lib/form-cues.ts` as percentages of the square image. Label text comes from the `cue.*` keys in `messages.ts`.
+
 ## Stack
 
 Next.js, TypeScript, Tailwind CSS, shadcn/ui, and lucide icons. Fonts: Outfit and Plus Jakarta Sans for Latin text, Prompt and Anuphan for Thai.
