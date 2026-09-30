@@ -1,0 +1,380 @@
+"use client";
+
+import {
+  createContext,
+  useContext,
+  useMemo,
+  useState,
+  useSyncExternalStore,
+  type ReactNode,
+} from "react";
+import {
+  LOOSEN_MOVES,
+  type LengthMin,
+  type StretchId,
+  getStretch,
+} from "@/lib/catalog";
+import {
+  currentStreak,
+  focusFor,
+  isoDate,
+  sessionMoveIds,
+  startOfToday,
+  tomorrowLine,
+  type Settings,
+} from "@/lib/plan";
+
+const STORAGE_KEY = "stretchday-prototype-v1";
+
+export type Side = "left" | "right";
+
+export type Session = {
+  date: string;
+  kind: "daily" | "loosen";
+  presetId: string;
+  length: LengthMin;
+  moveIds: string[];
+  index: number;
+  side: Side;
+  sides: Record<string, { left: boolean; right: boolean }>;
+  held: string[];
+  skipped: string[];
+  status: "active" | "done";
+};
+
+export type FinishedSession = {
+  date: string;
+  areas: string[];
+};
+
+export type Recap = {
+  date: string;
+  kind: "daily" | "loosen";
+  held: { id: string; name: string; area: string }[];
+  skipped: { id: string; name: string }[];
+  areas: string[];
+  streak: number;
+  tomorrow: string;
+  counted: boolean;
+};
+
+type TodayPlan = {
+  date: string;
+  presetId: string;
+};
+
+type Data = {
+  settings: Settings;
+  plan: TodayPlan | null;
+  session: Session | null;
+  finished: FinishedSession[];
+  recap: Recap | null;
+};
+
+type Store = {
+  ready: boolean;
+  settings: Settings;
+  planPresetId: string;
+  session: Session | null;
+  finished: FinishedSession[];
+  recap: Recap | null;
+  viewingRest: boolean;
+  setViewingRest: (value: boolean) => void;
+  saveSetup: (settings: Settings) => void;
+  setLength: (length: LengthMin) => void;
+  setPreset: (presetId: string) => void;
+  startSession: (kind?: "daily" | "loosen") => void;
+  startOver: () => void;
+  completeHold: () => void;
+  setSide: (side: Side) => void;
+  advance: () => void;
+  skip: () => void;
+  useAlternate: (id: StretchId) => void;
+};
+
+const DEFAULT_SETTINGS: Settings = {
+  setupDone: false,
+  length: 10,
+  tightAreas: [],
+  restDay: 0,
+  reminderOn: false,
+  reminderTime: "08:00",
+};
+
+const INITIAL: Data = {
+  settings: DEFAULT_SETTINGS,
+  plan: null,
+  session: null,
+  finished: [],
+  recap: null,
+};
+
+const StretchContext = createContext<Store | null>(null);
+
+function readStorage(): Data | null {
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as Data;
+    if (!parsed.settings) return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+function emptySides() {
+  return { left: false, right: false };
+}
+
+let snapshot: Data = INITIAL;
+let clientReady = false;
+const listeners = new Set<() => void>();
+
+function subscribe(listener: () => void) {
+  listeners.add(listener);
+  return () => listeners.delete(listener);
+}
+
+function remember(next: Data) {
+  snapshot = next;
+  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+  listeners.forEach((listener) => listener());
+}
+
+function update(recipe: (current: Data) => Data) {
+  remember(recipe(snapshot));
+}
+
+function getSnapshot(): Data {
+  if (!clientReady) {
+    clientReady = true;
+    const loaded = readStorage();
+    if (loaded) {
+      const today = isoDate(startOfToday());
+      if (
+        loaded.session &&
+        loaded.session.date !== today &&
+        loaded.session.status === "active"
+      ) {
+        loaded.session = null;
+      }
+      snapshot = loaded;
+    }
+  }
+  return snapshot;
+}
+
+export function StretchProvider({ children }: { children: ReactNode }) {
+  const data = useSyncExternalStore(subscribe, getSnapshot, () => INITIAL);
+  const [viewingRest, setViewingRest] = useState(false);
+  const ready = true;
+
+  const today = startOfToday();
+  const todayKey = isoDate(today);
+  const suggested = focusFor(today, data.settings).presetId;
+  const planPresetId =
+    data.plan && data.plan.date === todayKey ? data.plan.presetId : suggested;
+
+  const api = useMemo<Store>(() => {
+    const liveSession =
+      data.session && data.session.date === todayKey && data.session.status === "active"
+        ? data.session
+        : null;
+
+    function buildRecap(session: Session, held: string[], skipped: string[]): Recap {
+      const heldMoves = held
+        .map((id) => getStretch(id))
+        .filter((stretch) => stretch !== undefined)
+        .map((stretch) => ({
+          id: stretch.id,
+          name: stretch.name,
+          area: stretch.areaLabel,
+        }));
+      const skippedMoves = skipped
+        .map((id) => getStretch(id))
+        .filter((stretch) => stretch !== undefined)
+        .map((stretch) => ({ id: stretch.id, name: stretch.name }));
+      const areas = [...new Set(heldMoves.map((move) => move.area))];
+      const counted = session.kind === "daily" && heldMoves.length > 0;
+      const finishedDates = data.finished.map((entry) => entry.date);
+      const nextDates = counted
+        ? [...new Set([...finishedDates, session.date])]
+        : finishedDates;
+      return {
+        date: session.date,
+        kind: session.kind,
+        held: heldMoves,
+        skipped: skippedMoves,
+        areas,
+        streak: currentStreak(nextDates, data.settings.restDay, today),
+        tomorrow: tomorrowLine(today, data.settings),
+        counted,
+      };
+    }
+
+    return {
+      ready,
+      settings: data.settings,
+      planPresetId,
+      session: liveSession,
+      finished: data.finished,
+      recap: data.recap,
+      viewingRest,
+      setViewingRest,
+      saveSetup: (settings) => {
+        update((current) => ({ ...current, settings }));
+      },
+      setLength: (length) => {
+        if (liveSession) return;
+        update((current) => ({
+          ...current,
+          settings: { ...current.settings, length },
+        }));
+      },
+      setPreset: (presetId) => {
+        if (liveSession) return;
+        update((current) => ({
+          ...current,
+          plan: { date: todayKey, presetId },
+        }));
+      },
+      startSession: (kind = "daily") => {
+        const length = data.settings.length;
+        const moveIds =
+          kind === "loosen" ? [...LOOSEN_MOVES] : sessionMoveIds(planPresetId, length);
+        const session: Session = {
+          date: todayKey,
+          kind,
+          presetId: kind === "loosen" ? "loosen" : planPresetId,
+          length: kind === "loosen" ? 5 : length,
+          moveIds,
+          index: 0,
+          side: "left",
+          sides: {},
+          held: [],
+          skipped: [],
+          status: "active",
+        };
+        update((current) => ({ ...current, session }));
+      },
+      startOver: () => {
+        update((current) => ({ ...current, session: null }));
+      },
+      completeHold: () => {
+        update((current) => {
+          const session = current.session;
+          if (!session || session.status !== "active") return current;
+          const id = session.moveIds[session.index];
+          const stretch = getStretch(id);
+          const prev = session.sides[id] ?? emptySides();
+          const sides = {
+            ...session.sides,
+            [id]: stretch?.sided
+              ? { ...prev, [session.side]: true }
+              : { left: true, right: true },
+          };
+          return { ...current, session: { ...session, sides } };
+        });
+      },
+      setSide: (side) => {
+        update((current) => {
+          if (!current.session || current.session.status !== "active") return current;
+          return { ...current, session: { ...current.session, side } };
+        });
+      },
+      advance: () => {
+        update((current) => {
+          const session = current.session;
+          if (!session || session.status !== "active") return current;
+          const id = session.moveIds[session.index];
+          const held = session.held.includes(id) ? session.held : [...session.held, id];
+          if (session.index >= session.moveIds.length - 1) {
+            const recap = buildRecap(session, held, session.skipped);
+            const finished = recap.counted
+              ? [
+                  ...current.finished.filter((entry) => entry.date !== session.date),
+                  { date: session.date, areas: recap.areas },
+                ]
+              : current.finished;
+            return {
+              ...current,
+              finished,
+              recap,
+              session: { ...session, held, status: "done" },
+            };
+          }
+          return {
+            ...current,
+            session: {
+              ...session,
+              held,
+              index: session.index + 1,
+              side: "left",
+            },
+          };
+        });
+      },
+      skip: () => {
+        update((current) => {
+          const session = current.session;
+          if (!session || session.status !== "active") return current;
+          const id = session.moveIds[session.index];
+          const skipped = session.skipped.includes(id)
+            ? session.skipped
+            : [...session.skipped, id];
+          if (session.index >= session.moveIds.length - 1) {
+            const recap = buildRecap(session, session.held, skipped);
+            const finished = recap.counted
+              ? [
+                  ...current.finished.filter((entry) => entry.date !== session.date),
+                  { date: session.date, areas: recap.areas },
+                ]
+              : current.finished;
+            return {
+              ...current,
+              finished,
+              recap,
+              session: { ...session, skipped, status: "done" },
+            };
+          }
+          return {
+            ...current,
+            session: {
+              ...session,
+              skipped,
+              index: session.index + 1,
+              side: "left",
+            },
+          };
+        });
+      },
+      useAlternate: (id) => {
+        update((current) => {
+          const session = current.session;
+          if (!session || session.status !== "active") return current;
+          const moveIds = [...session.moveIds];
+          moveIds[session.index] = id;
+          const sides = { ...session.sides };
+          delete sides[id];
+          return {
+            ...current,
+            session: { ...session, moveIds, side: "left", sides },
+          };
+        });
+      },
+    };
+    // finish is closed over inside the object; today is stable for the session.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data, planPresetId, ready, todayKey, viewingRest]);
+
+  return <StretchContext.Provider value={api}>{children}</StretchContext.Provider>;
+}
+
+export function useStretch(): Store {
+  const value = useContext(StretchContext);
+  if (!value) {
+    throw new Error("useStretch must be used within StretchProvider");
+  }
+  return value;
+}
