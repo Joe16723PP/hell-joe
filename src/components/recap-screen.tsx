@@ -135,7 +135,7 @@ export function RecapScreen() {
                   <li key={move.id} className="flex items-center gap-3 rounded-2xl bg-muted/60 p-2">
                     {stretch && (
                       <div className="w-12 shrink-0 overflow-hidden rounded-xl stage">
-                        <StretchFigure id={stretch.id} />
+                        <StretchFigure id={stretch.id} sizes="96px" />
                       </div>
                     )}
                     <div className="min-w-0">

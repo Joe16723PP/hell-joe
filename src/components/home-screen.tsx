@@ -246,7 +246,7 @@ function TodayHome({ onEditSetup }: { onEditSetup: () => void }) {
               <figure className="relative mx-auto w-full max-w-xs sm:max-w-sm">
                 <div className="absolute inset-4 animate-breathe rounded-full bg-white/40 blur-2xl" aria-hidden />
                 <div className="relative stage rounded-full p-4 shadow-2xl shadow-black/20 ring-8 ring-white/15">
-                  {hero && <StretchFigure id={hero.id} />}
+                  {hero && <StretchFigure id={hero.id} priority sizes="384px" />}
                 </div>
                 {hero && (
                   <figcaption className="mt-3 text-center text-sm text-white/85">
@@ -282,7 +282,7 @@ function TodayHome({ onEditSetup }: { onEditSetup: () => void }) {
                       )}
                     >
                       <div className="relative w-14 shrink-0 overflow-hidden rounded-xl stage sm:w-16">
-                        <StretchFigure id={stretch.id} />
+                        <StretchFigure id={stretch.id} sizes="96px" />
                         <span
                           className={cn(
                             "absolute top-1 left-1 grid size-5 place-items-center rounded-full text-[0.7rem] font-bold",
@@ -553,7 +553,7 @@ function RestHome({
         <div className="mt-4 grid grid-cols-3 gap-2">
           {(["neck", "shoulder", "cat"] as StretchId[]).map((id) => (
             <div key={id} className="overflow-hidden rounded-2xl stage">
-              <StretchFigure id={id} />
+              <StretchFigure id={id} sizes="200px" />
             </div>
           ))}
         </div>
@@ -608,7 +608,7 @@ function PresetSwap({
                   )}
                 >
                   <div className="w-14 shrink-0 overflow-hidden rounded-xl stage">
-                    <StretchFigure id={preset.order[0]} />
+                    <StretchFigure id={preset.order[0]} sizes="96px" />
                   </div>
                   <span className="min-w-0 flex-1">
                     <span className="block font-heading text-lg font-semibold">{copy.name}</span>

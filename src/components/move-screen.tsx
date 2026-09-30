@@ -8,6 +8,7 @@ import {
   ArrowRight,
   Check,
   Flag,
+  Footprints,
   HeartPulse,
   Play,
   Plus,
@@ -15,6 +16,7 @@ import {
   SkipForward,
   X,
 } from "lucide-react";
+import { FormCompare } from "@/components/form-check";
 import { StretchFigure } from "@/components/stretch-figure";
 import { Button, buttonVariants } from "@/components/ui/button";
 import {
@@ -290,12 +292,12 @@ function MoveView({
                 {side === "left" ? t("move.leftSide") : t("move.rightSide")}
               </span>
             )}
-            <StretchFigure id={stretch.id} mirror={mirror} className="mx-auto max-w-md" />
+            <StretchFigure id={stretch.id} mirror={mirror} priority className="mx-auto max-w-md" />
           </div>
           {copy.setup && (
             <figure className="mt-3 flex items-center gap-3 rounded-3xl border border-border bg-card p-3 shadow-sm">
-              <div className="w-20 shrink-0 overflow-hidden rounded-2xl stage sm:w-24">
-                <StretchFigure id={stretch.id} variant="setup" />
+              <div className="grid size-12 shrink-0 place-items-center rounded-2xl bg-secondary text-primary">
+                <Footprints className="size-6" aria-hidden />
               </div>
               <figcaption className="text-sm leading-relaxed sm:text-base">
                 <span className="block font-semibold text-primary">{t("move.startHere")}</span>
@@ -754,27 +756,14 @@ function FormDialog({ stretch }: { stretch: Stretch }) {
         <ScanEye className="size-4" aria-hidden />
         {t("form.button")}
       </DialogTrigger>
-      <DialogContent className="max-h-[90vh] overflow-y-auto rounded-3xl p-6 sm:max-w-3xl">
+      <DialogContent className="max-h-[92vh] overflow-y-auto rounded-[2rem] p-5 sm:max-w-4xl sm:p-7">
         <DialogHeader>
-          <DialogTitle className="font-heading text-2xl font-semibold">{t("form.title")}</DialogTitle>
-          <DialogDescription className="text-base">{copy.mistake}</DialogDescription>
+          <DialogTitle className="font-heading text-3xl font-semibold">{t("form.title")}</DialogTitle>
+          <DialogDescription className="text-base">
+            <span className="font-semibold text-foreground">{copy.name}</span> · {t("form.intro")}
+          </DialogDescription>
         </DialogHeader>
-        <div className="grid grid-cols-2 gap-3">
-          <figure className="overflow-hidden rounded-2xl border-2 border-coral/40 bg-accent p-2">
-            <StretchFigure id={stretch.id} variant="mistake" />
-            <figcaption className="flex items-center justify-center gap-1.5 px-1 pb-1 text-center text-sm font-semibold text-accent-foreground">
-              <X className="size-4" strokeWidth={3} aria-hidden />
-              {t("form.mistake")}
-            </figcaption>
-          </figure>
-          <figure className="overflow-hidden rounded-2xl border-2 border-primary/40 stage p-2">
-            <StretchFigure id={stretch.id} variant="hold" />
-            <figcaption className="flex items-center justify-center gap-1.5 px-1 pb-1 text-center text-sm font-semibold text-primary">
-              <Check className="size-4" strokeWidth={3} aria-hidden />
-              {t("form.aim")}
-            </figcaption>
-          </figure>
-        </div>
+        <FormCompare stretch={stretch} />
       </DialogContent>
     </Dialog>
   );
@@ -813,7 +802,7 @@ function SkipDialog({
         {alternate && (
           <div className="flex items-center gap-3 rounded-2xl border border-border bg-background p-3">
             <div className="w-20 shrink-0 overflow-hidden rounded-xl stage">
-              <StretchFigure id={alternate.id} />
+              <StretchFigure id={alternate.id} sizes="96px" />
             </div>
             <div>
               <p className="font-semibold">{i18n.stretch(alternate).name}</p>

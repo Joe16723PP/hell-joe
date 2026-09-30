@@ -125,8 +125,8 @@ export function LibraryScreen() {
                   href={`/library/${stretch.id}`}
                   className="group flex h-full flex-col overflow-hidden rounded-3xl border border-border bg-card shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-lg hover:shadow-primary/10"
                 >
-                  <div className="relative stage px-10 pt-3">
-                    <StretchFigure id={stretch.id} className="mx-auto max-h-52" />
+                  <div className="relative stage pt-2">
+                    <StretchFigure id={stretch.id} sizes="(min-width: 1024px) 240px, (min-width: 640px) 45vw, 90vw" className="mx-auto h-52 w-auto" />
                     <span className="absolute top-3 left-3 rounded-full bg-card/90 px-2.5 py-1 text-xs font-semibold text-secondary-foreground shadow-sm backdrop-blur">
                       {copy.areaLabel}
                     </span>
