@@ -1,5 +1,6 @@
 "use client";
 
+import { useLayoutEffect, useRef } from "react";
 import { Check, X } from "lucide-react";
 import { StretchFigure } from "@/components/stretch-figure";
 import type { Stretch } from "@/lib/catalog";
@@ -100,18 +101,52 @@ function Overlay({ card, tone, idPrefix }: { card: FormCard; tone: Tone; idPrefi
         )}
       </svg>
       {card.cues.map((cue) => (
-        <span
-          key={cue.label}
-          className={cn(
-            "absolute max-w-[46%] -translate-x-1/2 -translate-y-1/2 rounded-xl px-2 py-1 text-center text-[0.7rem] leading-tight font-semibold shadow-sm ring-1 sm:px-2.5 sm:text-xs",
-            TONE[tone].label,
-          )}
-          style={{ left: `${cue.at[0]}%`, top: `${cue.at[1]}%` }}
-        >
+        <CueLabel key={cue.label} at={cue.at} className={TONE[tone].label}>
           {t(cue.label)}
-        </span>
+        </CueLabel>
       ))}
     </>
+  );
+}
+
+/** Centers on its anchor, then nudges inward so longer Thai labels never cross the card edge. */
+function CueLabel({ at, className, children }: { at: Pt; className: string; children: string }) {
+  const ref = useRef<HTMLSpanElement>(null);
+
+  useLayoutEffect(() => {
+    const el = ref.current;
+    const box = el?.parentElement;
+    if (!el || !box) return;
+    const measure = () => {
+      const width = box.clientWidth;
+      const own = el.offsetWidth;
+      const left = (at[0] / 100) * width - own / 2;
+      const inset = 4;
+      const clamped = Math.min(Math.max(left, inset), width - own - inset);
+      el.style.setProperty("--shift", `${clamped - left}px`);
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(box);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [at, children]);
+
+  return (
+    <span
+      ref={ref}
+      className={cn(
+        "absolute w-max max-w-[46%] rounded-xl px-2 py-1 text-center text-[0.7rem] leading-tight font-semibold shadow-sm ring-1 sm:px-2.5 sm:text-xs",
+        className,
+      )}
+      style={{
+        left: `${at[0]}%`,
+        top: `${at[1]}%`,
+        transform: "translate(calc(-50% + var(--shift, 0px)), -50%)",
+      }}
+    >
+      {children}
+    </span>
   );
 }
 

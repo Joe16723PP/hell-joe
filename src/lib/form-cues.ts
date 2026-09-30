@@ -35,7 +35,6 @@ export const FORM_CUES: Record<StretchId, FormPair> = {
   },
   "chin-tuck": {
     wrong: {
-      spot: [50, 17],
       cues: [{ label: "cue.chinDrops", at: [76, 12], arrow: { from: [64, 8], to: [55, 19], bend: -3 } }],
     },
     right: {
@@ -45,7 +44,6 @@ export const FORM_CUES: Record<StretchId, FormPair> = {
   },
   "neck-turn": {
     wrong: {
-      spot: [52, 20],
       cues: [
         { label: "cue.chinJuts", at: [80, 12], arrow: { from: [70, 15], to: [57, 19] } },
         { label: "cue.shouldersLift", at: [18, 42], arrow: { from: [26, 36], to: [33, 26] } },
@@ -74,13 +72,11 @@ export const FORM_CUES: Record<StretchId, FormPair> = {
       spot: [37, 24],
       cues: [
         { label: "cue.shoulderLifts", at: [18, 10], arrow: { from: [28, 30], to: [31, 19] } },
-        { label: "cue.ribsFlare", at: [76, 44], arrow: { from: [68, 42], to: [57, 38] } },
       ],
     },
     right: {
       cues: [
         { label: "cue.shoulderDown", at: [80, 12], arrow: { from: [66, 14], to: [64, 26] } },
-        { label: "cue.ribsDown", at: [78, 44], arrow: { from: [70, 42], to: [58, 38] } },
       ],
     },
   },
@@ -107,14 +103,14 @@ export const FORM_CUES: Record<StretchId, FormPair> = {
     wrong: {
       spot: [37, 24],
       cues: [
-        { label: "cue.shoulderLifts", at: [70, 14], arrow: { from: [58, 16], to: [42, 22] } },
+        { label: "cue.shoulderLifts", at: [16, 48], arrow: { from: [20, 42], to: [35, 28] } },
         { label: "cue.backArches", at: [76, 50], arrow: { from: [67, 50], to: [55, 48] } },
       ],
     },
     right: {
       guides: [[[54, 26], [54, 60]]],
       cues: [
-        { label: "cue.shoulderDown", at: [70, 14], arrow: { from: [44, 14], to: [40, 25] } },
+        { label: "cue.shoulderDown", at: [16, 48], arrow: { from: [20, 42], to: [35, 30] } },
         { label: "cue.ribsStacked", at: [78, 44] },
       ],
     },
@@ -137,7 +133,6 @@ export const FORM_CUES: Record<StretchId, FormPair> = {
   },
   thread: {
     wrong: {
-      spot: [80, 68],
       cues: [
         { label: "cue.neckCranks", at: [84, 48], arrow: { from: [84, 54], to: [82, 63] } },
         { label: "cue.shouldersSink", at: [52, 36], arrow: { from: [58, 42], to: [66, 54] } },
@@ -149,20 +144,18 @@ export const FORM_CUES: Record<StretchId, FormPair> = {
   },
   hug: {
     wrong: {
-      spot: [48, 22],
       cues: [{ label: "cue.chinDrops", at: [76, 12], arrow: { from: [66, 14], to: [55, 20] } }],
     },
     right: {
       guides: [[[35, 26], [29, 37], [33, 48]]],
       cues: [
         { label: "cue.neckLong", at: [76, 12], arrow: { from: [66, 14], to: [56, 17] } },
-        { label: "cue.upperBackRounds", at: [16, 24] },
+        { label: "cue.upperBackRounds", at: [16, 16] },
       ],
     },
   },
   "knees-chest": {
     wrong: {
-      spot: [22, 52],
       cues: [{ label: "cue.headLifts", at: [22, 24], arrow: { from: [14, 46], to: [14, 34] } }],
     },
     right: {
@@ -171,7 +164,6 @@ export const FORM_CUES: Record<StretchId, FormPair> = {
   },
   child: {
     wrong: {
-      spot: [26, 66],
       cues: [
         { label: "cue.hipsHigh", at: [76, 24], arrow: { from: [72, 46], to: [72, 34] } },
         { label: "cue.neckPinches", at: [22, 46], arrow: { from: [24, 52], to: [27, 61] } },
@@ -284,10 +276,10 @@ export const FORM_CUES: Record<StretchId, FormPair> = {
       ],
     },
     right: {
-      guides: [[[32, 56], [42, 14]]],
+      guides: [[[44, 60], [51, 18]]],
       cues: [
-        { label: "cue.spineLong", at: [18, 24] },
-        { label: "cue.hingeHips", at: [18, 64], arrow: { from: [24, 60], to: [32, 57] } },
+        { label: "cue.spineLong", at: [20, 22] },
+        { label: "cue.hingeHips", at: [22, 88], arrow: { from: [28, 82], to: [41, 62] } },
       ],
     },
   },
@@ -320,7 +312,7 @@ export const FORM_CUES: Record<StretchId, FormPair> = {
       guides: [[[39, 42], [39, 90]]],
       cues: [
         { label: "cue.kneeDown", at: [18, 68], arrow: { from: [25, 64], to: [35, 58] } },
-        { label: "cue.ribsDown", at: [16, 30], arrow: { from: [23, 33], to: [33, 38] } },
+        { label: "cue.ribsDown", at: [62, 12], arrow: { from: [58, 18], to: [53, 31] } },
       ],
     },
   },
