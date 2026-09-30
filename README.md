@@ -22,8 +22,16 @@ The dev server listens on [http://127.0.0.1:47213](http://127.0.0.1:47213).
 - Finish into a recap. The week and the streak stay after a reload.
 - Turn on one reminder for stretch days. It uses the browser’s notifications if you allow them. Rest day stays quiet.
 
-Progress is saved in this browser’s localStorage.
+- Switch between English and Thai (ภาษาไทย) from the EN / TH toggle in the header. The first visit follows the browser language.
+
+Progress and the language choice are saved in this browser’s localStorage.
+
+## Localization
+
+- UI copy lives in `src/lib/i18n/messages.ts` (`en` and `th`). The Thai dictionary is typed against the English keys, so a missing key fails the type check.
+- Thai text for the 24 stretches and 4 presets lives in `src/lib/i18n/catalog-th.ts`. English stays in `src/lib/catalog.ts`.
+- Components read copy through `useI18n()` from `src/lib/i18n/provider.tsx`. Dates and weekday names use `Intl` with `en-US` or `th-TH`.
 
 ## Stack
 
-Next.js, TypeScript, Tailwind CSS, and shadcn/ui.
+Next.js, TypeScript, Tailwind CSS, shadcn/ui, and lucide icons. Fonts: Outfit and Plus Jakarta Sans for Latin text, Prompt and Anuphan for Thai.
