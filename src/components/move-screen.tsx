@@ -22,6 +22,13 @@ import {
   getStretch,
 } from "@/lib/catalog";
 import { playHoldTick, primeHoldTick, shouldPlayHoldTick } from "@/lib/hold-tick";
+import {
+  POSE_PAUSE_SECONDS,
+  poseIsComplete,
+  posePauseLabel,
+  shouldPauseForNextPose,
+  stepPosePause,
+} from "@/lib/pose-pause";
 import { useStretch, type Side } from "@/lib/store";
 import { cn } from "cn";
 
@@ -189,7 +196,11 @@ function MoveView({
   alternate: Stretch | null;
   onAlternate: ((id: StretchId) => void) | null;
 }) {
-  const bothDone = stretch.sided ? sides.left && sides.right : sides.left;
+  const bothDone = poseIsComplete({
+    sided: stretch.sided,
+    left: sides.left,
+    right: sides.right,
+  });
   const sideDone = stretch.sided ? sides[side] : sides.left;
   const otherSide: Side = side === "left" ? "right" : "left";
   const needsOther = stretch.sided && sideDone && !sides[otherSide];
@@ -356,6 +367,19 @@ function HoldControls({
   const [timerKey, setTimerKey] = useState(resetKey);
   const doneRef = useRef(false);
   const remainingRef = useRef(remaining);
+  const onNextRef = useRef(onNext);
+  const advancedRef = useRef(false);
+  const pauseIntervalRef = useRef<number | null>(null);
+  const canAdvance = onNext !== null;
+  const pausing = shouldPauseForNextPose({ poseComplete: bothDone, canAdvance });
+  const pauseToken = pausing ? resetKey : "";
+  const [pauseTokenState, setPauseTokenState] = useState(pauseToken);
+  const [pauseLeft, setPauseLeft] = useState<number | null>(pausing ? POSE_PAUSE_SECONDS : null);
+
+  if (pauseTokenState !== pauseToken) {
+    setPauseTokenState(pauseToken);
+    setPauseLeft(pausing ? POSE_PAUSE_SECONDS : null);
+  }
 
   if (timerKey !== resetKey) {
     setTimerKey(resetKey);
@@ -365,7 +389,36 @@ function HoldControls({
 
   useEffect(() => {
     doneRef.current = false;
+    advancedRef.current = false;
   }, [resetKey]);
+
+  useEffect(() => {
+    onNextRef.current = onNext;
+  }, [onNext]);
+
+  useEffect(() => {
+    if (!pausing) return;
+    let left = POSE_PAUSE_SECONDS;
+    let cancelled = false;
+    const id = window.setInterval(() => {
+      if (cancelled) return;
+      const step = stepPosePause(left);
+      left = step.secondsLeft;
+      setPauseLeft(left);
+      if (!step.advance) return;
+      window.clearInterval(id);
+      if (pauseIntervalRef.current === id) pauseIntervalRef.current = null;
+      if (advancedRef.current) return;
+      advancedRef.current = true;
+      onNextRef.current?.();
+    }, 1000);
+    pauseIntervalRef.current = id;
+    return () => {
+      cancelled = true;
+      window.clearInterval(id);
+      if (pauseIntervalRef.current === id) pauseIntervalRef.current = null;
+    };
+  }, [pausing, resetKey]);
 
   useEffect(() => {
     remainingRef.current = remaining;
@@ -436,7 +489,22 @@ function HoldControls({
     setRunning(true);
   }
 
-  const clock = (
+  function goNext() {
+    if (!onNext || advancedRef.current) return;
+    advancedRef.current = true;
+    if (pauseIntervalRef.current !== null) {
+      window.clearInterval(pauseIntervalRef.current);
+      pauseIntervalRef.current = null;
+    }
+    onNext();
+  }
+
+  const pauseShown = pausing ? (pauseLeft ?? POSE_PAUSE_SECONDS) : null;
+  const clock = pauseShown !== null ? (
+    <p className="font-heading text-4xl leading-tight text-balance" aria-live="polite">
+      {posePauseLabel(pauseShown)}
+    </p>
+  ) : (
     <p className="font-heading text-6xl tabular-nums leading-none" aria-live="polite">
       {formatHold(remaining)}
     </p>
@@ -470,7 +538,7 @@ function HoldControls({
         </Button>
       )}
       {bothDone && onNext && (
-        <Button type="button" size="lg" onClick={onNext}>
+        <Button type="button" size="lg" onClick={goNext}>
           {nextLabel}
         </Button>
       )}
@@ -488,9 +556,15 @@ function HoldControls({
       </div>
       <div className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-background/95 px-4 py-3 backdrop-blur-md md:hidden">
         <div className="mx-auto flex max-w-lg items-center justify-between gap-3">
-          <p className="font-heading text-4xl tabular-nums" aria-hidden>
-            {formatHold(remaining)}
-          </p>
+          {pauseShown !== null ? (
+            <p className="font-heading text-xl leading-tight text-balance" aria-live="polite">
+              {posePauseLabel(pauseShown)}
+            </p>
+          ) : (
+            <p className="font-heading text-4xl tabular-nums" aria-hidden>
+              {formatHold(remaining)}
+            </p>
+          )}
           <div className="flex flex-wrap justify-end gap-2">{actions}</div>
         </div>
       </div>
