@@ -54,6 +54,7 @@ export function RecapScreen() {
   const heldCount = recap.held.length;
   const skippedCount = recap.skipped.length;
   const tomorrow = focusFor(addDays(today, 1), settings);
+  const celebrate = !loosen && recap.counted;
 
   return (
     <main className="mx-auto w-full max-w-3xl px-4 py-6 md:px-8 md:py-10">
@@ -62,10 +63,12 @@ export function RecapScreen() {
           "relative overflow-hidden rounded-[2rem] p-6 text-center text-white shadow-xl sm:p-10",
           loosen
             ? "bg-gradient-to-br from-[#1e3a5f] via-[#2b4c7e] to-[#5a4f99] shadow-[#2b4c7e]/25"
-            : "hero-gradient shadow-primary/25",
+            : celebrate
+              ? "hero-gradient shadow-primary/25"
+              : "bg-gradient-to-br from-[#4b5f5a] to-[#6b807a] shadow-black/10",
         )}
       >
-        {CONFETTI.map((piece, index) => (
+        {celebrate && CONFETTI.map((piece, index) => (
           <span
             key={index}
             className={cn("absolute animate-pop rounded-sm", piece.color, piece.size, piece.rotate)}
@@ -74,7 +77,13 @@ export function RecapScreen() {
           />
         ))}
         <div className="relative mx-auto grid size-20 animate-pop place-items-center rounded-full bg-white text-primary shadow-lg">
-          {loosen ? <Moon className="size-9 text-[#2b4c7e]" aria-hidden /> : <Check className="size-10" strokeWidth={3} aria-hidden />}
+          {loosen ? (
+            <Moon className="size-9 text-[#2b4c7e]" aria-hidden />
+          ) : celebrate ? (
+            <Check className="size-10" strokeWidth={3} aria-hidden />
+          ) : (
+            <SkipForward className="size-9 text-[#4b5f5a]" aria-hidden />
+          )}
         </div>
         <p className="relative mt-5 text-sm font-semibold tracking-wide text-white/80 uppercase">
           {loosen ? t("recap.kickerLoosen") : t("recap.kicker")}
