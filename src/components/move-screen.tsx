@@ -1,8 +1,20 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import {
+  ArrowLeftRight,
+  ArrowRight,
+  Check,
+  Flag,
+  HeartPulse,
+  Play,
+  Plus,
+  ScanEye,
+  SkipForward,
+  X,
+} from "lucide-react";
 import { StretchFigure } from "@/components/stretch-figure";
 import { Button, buttonVariants } from "@/components/ui/button";
 import {
@@ -16,16 +28,15 @@ import {
 import {
   alternateFor,
   holdSecondsForLength,
-  positionLabel,
   type Stretch,
   type StretchId,
   getStretch,
 } from "@/lib/catalog";
 import { playHoldTick, primeHoldTick, shouldPlayHoldTick } from "@/lib/hold-tick";
+import { useI18n } from "@/lib/i18n/provider";
 import {
   POSE_PAUSE_SECONDS,
   poseIsComplete,
-  posePauseLabel,
   shouldPauseForNextPose,
   stepPosePause,
 } from "@/lib/pose-pause";
@@ -34,47 +45,35 @@ import { cn } from "cn";
 
 export function SessionMove() {
   const router = useRouter();
+  const { t } = useI18n();
   const { ready, session, completeHold, setSide, advance, skip, useAlternate } = useStretch();
 
   if (!ready) {
-    return (
-      <main className="mx-auto max-w-3xl px-4 py-16">
-        <p className="text-lg">Opening the move…</p>
-      </main>
-    );
+    return <MoveSkeleton label={t("move.loading")} />;
   }
 
   if (!session) {
     return (
-      <main className="mx-auto max-w-xl px-4 py-16">
-        <h1 className="font-heading text-4xl">No session in progress</h1>
-        <p className="mt-3 text-lg leading-relaxed">
-          Today’s session is on the home screen. An unfinished session does not count.
-        </p>
-        <Link href="/" className={cn(buttonVariants({ size: "lg" }), "mt-6 inline-flex")}>
-          Back to today
-        </Link>
-      </main>
+      <EmptyState
+        title={t("move.noSessionTitle")}
+        body={t("move.noSessionBody")}
+        href="/"
+        cta={t("common.backToToday")}
+      />
     );
   }
 
   const id = session.moveIds[session.index];
   const stretch = getStretch(id);
   if (!stretch) {
-    return (
-      <main className="mx-auto max-w-xl px-4 py-16">
-        <h1 className="font-heading text-4xl">That move is missing</h1>
-        <Link href="/" className={cn(buttonVariants({ size: "lg" }), "mt-6 inline-flex")}>
-          Back to today
-        </Link>
-      </main>
-    );
+    return <EmptyState title={t("move.missing")} href="/" cta={t("common.backToToday")} />;
   }
 
   const sides = session.sides[stretch.id] ?? { left: false, right: false };
   const alternate = alternateFor(stretch.id, session.moveIds);
   const seconds = session.kind === "loosen" ? 30 : holdSecondsForLength(session.length);
   const last = session.index === session.moveIds.length - 1;
+  const counter = { current: session.index + 1, total: session.moveIds.length };
 
   return (
     <MoveView
@@ -83,19 +82,12 @@ export function SessionMove() {
       side={session.side}
       sides={sides}
       mirror={stretch.sided && session.side === "right"}
-      kicker={
-        session.kind === "loosen"
-          ? `Easy loosen · ${session.index + 1} of ${session.moveIds.length}`
-          : `Move ${session.index + 1} of ${session.moveIds.length}`
-      }
-      note={
-        session.kind === "loosen"
-          ? "Optional. Doing this does not count as a streak day."
-          : null
-      }
+      kicker={t(session.kind === "loosen" ? "move.kickerLoosen" : "move.kicker", counter)}
+      progress={{ index: session.index, total: session.moveIds.length }}
+      note={session.kind === "loosen" ? t("move.loosenNote") : null}
       backHref="/"
-      backLabel="Leave for later"
-      nextLabel={last ? "Finish session" : "Next move"}
+      backLabel={t("move.leave")}
+      nextLabel={last ? t("move.finish") : t("move.next")}
       tick
       onCompleteHold={completeHold}
       onSetSide={setSide}
@@ -114,19 +106,19 @@ export function SessionMove() {
 }
 
 export function LibraryMove({ stretchId }: { stretchId: string }) {
+  const { t } = useI18n();
   const stretch = getStretch(stretchId);
   const [side, setSide] = useState<Side>("left");
   const [sides, setSides] = useState({ left: false, right: false });
 
   if (!stretch) {
     return (
-      <main className="mx-auto max-w-xl px-4 py-16">
-        <h1 className="font-heading text-4xl">That stretch is not in this set</h1>
-        <p className="mt-3 text-lg">That one is not in the library.</p>
-        <Link href="/library" className={cn(buttonVariants({ size: "lg" }), "mt-6 inline-flex")}>
-          Back to the library
-        </Link>
-      </main>
+      <EmptyState
+        title={t("move.libMissingTitle")}
+        body={t("move.libMissingBody")}
+        href="/library"
+        cta={t("move.backLibrary")}
+      />
     );
   }
 
@@ -137,11 +129,12 @@ export function LibraryMove({ stretchId }: { stretchId: string }) {
       side={side}
       sides={sides}
       mirror={stretch.sided && side === "right"}
-      kicker="From the library"
-      note="This does not replace today’s session."
+      kicker={t("move.fromLibrary")}
+      progress={null}
+      note={t("move.libraryNote")}
       backHref="/library"
-      backLabel="Back to the library"
-      nextLabel="Held"
+      backLabel={t("move.backLibrary")}
+      nextLabel={t("move.held")}
       tick={false}
       onCompleteHold={() => {
         setSides((current) =>
@@ -159,6 +152,47 @@ export function LibraryMove({ stretchId }: { stretchId: string }) {
   );
 }
 
+function MoveSkeleton({ label }: { label: string }) {
+  return (
+    <main className="mx-auto max-w-6xl px-4 py-6 md:px-8" aria-busy>
+      <p className="sr-only">{label}</p>
+      <div className="h-2 animate-pulse rounded-full bg-muted" />
+      <div className="mt-6 grid gap-6 lg:grid-cols-2">
+        <div className="aspect-[9/10] animate-pulse rounded-[2rem] bg-muted" />
+        <div className="space-y-3">
+          <div className="h-10 w-2/3 animate-pulse rounded-xl bg-muted" />
+          <div className="h-40 animate-pulse rounded-3xl bg-muted" />
+        </div>
+      </div>
+    </main>
+  );
+}
+
+function EmptyState({
+  title,
+  body,
+  href,
+  cta,
+}: {
+  title: string;
+  body?: string;
+  href: string;
+  cta: string;
+}) {
+  return (
+    <main className="mx-auto max-w-xl px-4 py-16 text-center">
+      <div className="mx-auto grid size-16 place-items-center rounded-3xl bg-secondary text-primary">
+        <Flag className="size-7" aria-hidden />
+      </div>
+      <h1 className="mt-5 text-4xl font-semibold">{title}</h1>
+      {body && <p className="mt-3 text-lg leading-relaxed text-foreground/80">{body}</p>}
+      <Link href={href} className={cn(buttonVariants({ size: "lg" }), "mt-6 inline-flex h-12 rounded-2xl px-6")}>
+        {cta}
+      </Link>
+    </main>
+  );
+}
+
 function MoveView({
   stretch,
   seconds,
@@ -166,6 +200,7 @@ function MoveView({
   sides,
   mirror,
   kicker,
+  progress,
   note,
   backHref,
   backLabel,
@@ -184,6 +219,7 @@ function MoveView({
   sides: { left: boolean; right: boolean };
   mirror: boolean;
   kicker: string;
+  progress: { index: number; total: number } | null;
   note: string | null;
   backHref: string;
   backLabel: string;
@@ -196,6 +232,9 @@ function MoveView({
   alternate: Stretch | null;
   onAlternate: ((id: StretchId) => void) | null;
 }) {
+  const i18n = useI18n();
+  const { t } = i18n;
+  const copy = i18n.stretch(stretch);
   const bothDone = poseIsComplete({
     sided: stretch.sided,
     left: sides.left,
@@ -206,66 +245,112 @@ function MoveView({
   const needsOther = stretch.sided && sideDone && !sides[otherSide];
 
   return (
-    <main className="mx-auto w-full max-w-6xl px-4 py-4 pb-36 md:px-8 md:py-8 md:pb-10">
+    <main className="mx-auto w-full max-w-6xl px-4 py-4 pb-44 md:px-8 md:py-8 md:pb-10">
       <div className="flex items-center justify-between gap-3">
-        <p className="text-sm tracking-[0.14em] text-muted-foreground uppercase">{kicker}</p>
+        <p className="text-sm font-semibold text-primary">{kicker}</p>
         <Link
           href={backHref}
-          className="inline-flex min-h-11 items-center text-base underline decoration-border underline-offset-4"
+          className="inline-flex min-h-11 items-center gap-1.5 rounded-full px-3 text-sm font-medium text-foreground/75 hover:bg-muted"
         >
+          <X className="size-4" aria-hidden />
           {backLabel}
         </Link>
       </div>
+      {progress && (
+        <div
+          className="mt-2 flex gap-1.5"
+          role="progressbar"
+          aria-label={t("move.progress")}
+          aria-valuemin={0}
+          aria-valuemax={progress.total}
+          aria-valuenow={progress.index}
+        >
+          {Array.from({ length: progress.total }, (_, index) => (
+            <span
+              key={index}
+              className={cn(
+                "h-2 flex-1 rounded-full transition-colors",
+                index < progress.index
+                  ? "bg-primary"
+                  : index === progress.index
+                    ? "bg-gradient-to-r from-primary to-[#5eead4]"
+                    : "bg-muted",
+              )}
+            />
+          ))}
+        </div>
+      )}
 
-      <div className="mt-4 grid items-start gap-6 lg:grid-cols-2">
-        <div>
-          <div className="rounded-[1.75rem] border border-border bg-[#f7f1e6] p-2 sm:p-4">
+      <div className="mt-5 grid items-start gap-6 lg:grid-cols-2 lg:gap-10">
+        <div className="lg:sticky lg:top-24">
+          <div className="relative overflow-hidden rounded-[2rem] border border-border stage p-2 shadow-sm sm:p-4">
+            {stretch.sided && (
+              <span className="absolute top-4 left-4 z-10 inline-flex items-center gap-1.5 rounded-full bg-card/90 px-3 py-1.5 text-sm font-semibold shadow-sm backdrop-blur">
+                <ArrowLeftRight className="size-4 text-primary" aria-hidden />
+                {side === "left" ? t("move.leftSide") : t("move.rightSide")}
+              </span>
+            )}
             <StretchFigure id={stretch.id} mirror={mirror} className="mx-auto max-w-md" />
           </div>
-          {stretch.setup && (
-            <figure className="mt-3 flex items-center gap-3 rounded-2xl border border-border bg-card p-3">
-              <div className="w-24 shrink-0 sm:w-28">
+          {copy.setup && (
+            <figure className="mt-3 flex items-center gap-3 rounded-3xl border border-border bg-card p-3 shadow-sm">
+              <div className="w-20 shrink-0 overflow-hidden rounded-2xl stage sm:w-24">
                 <StretchFigure id={stretch.id} variant="setup" />
               </div>
               <figcaption className="text-sm leading-relaxed sm:text-base">
-                <span className="block font-medium">Start here</span>
-                {stretch.setup}
+                <span className="block font-semibold text-primary">{t("move.startHere")}</span>
+                {copy.setup}
               </figcaption>
             </figure>
           )}
         </div>
 
         <div>
-          <p className="text-sm text-muted-foreground">
-            {stretch.areaLabel} · {positionLabel(stretch.position)}
-          </p>
-          <h1 className="mt-1 font-heading text-4xl leading-tight text-balance sm:text-5xl">
-            {stretch.name}
-          </h1>
-          <p className="mt-4 flex flex-wrap items-baseline gap-x-2 text-lg">
-            <span className="inline-block size-2.5 translate-y-px rounded-full bg-[#c45c3e]" aria-hidden />
-            <span className="font-medium">{stretch.plain}</span>
-            <span className="text-muted-foreground">· {stretch.anatomical}</span>
-          </p>
-          {note && <p className="mt-3 text-base text-muted-foreground">{note}</p>}
+          <div className="flex flex-wrap gap-1.5">
+            <span className="rounded-full bg-secondary px-3 py-1 text-sm font-semibold text-secondary-foreground">
+              {copy.areaLabel}
+            </span>
+            <span className="rounded-full bg-muted px-3 py-1 text-sm font-medium text-foreground/75">
+              {copy.positionLabel}
+            </span>
+          </div>
+          <h1 className="mt-3 text-4xl leading-tight font-semibold text-balance sm:text-5xl">{copy.name}</h1>
 
-          <ol className="mt-6 space-y-3">
-            {stretch.steps.map((step, index) => (
-              <li key={step} className="flex gap-3 text-base leading-relaxed sm:text-lg">
-                <span className="font-heading text-xl text-primary">{index + 1}</span>
-                <span>{step}</span>
-              </li>
-            ))}
-          </ol>
+          <div className="mt-4 flex items-center gap-3 rounded-2xl bg-accent p-3">
+            <span className="relative grid size-10 shrink-0 place-items-center">
+              <span className="absolute inset-0 animate-ping rounded-full bg-coral/25 [animation-duration:2.4s]" aria-hidden />
+              <span className="size-4 rounded-full bg-coral ring-4 ring-coral/25" aria-hidden />
+            </span>
+            <div className="min-w-0">
+              <p className="text-xs font-semibold tracking-wide text-accent-foreground/80 uppercase">
+                {t("move.feelIt")}
+              </p>
+              <p className="font-semibold text-accent-foreground">
+                {copy.plain} <span className="font-normal opacity-80">· {copy.anatomical}</span>
+              </p>
+            </div>
+          </div>
+          {note && <p className="mt-3 text-sm text-muted-foreground">{note}</p>}
 
-          <p className="mt-5 text-base">Pain means stop. A stretch should feel like steady tension.</p>
+          <section className="mt-5 rounded-3xl border border-border bg-card p-5 shadow-sm">
+            <h2 className="text-sm font-semibold tracking-wide text-muted-foreground uppercase">{t("move.steps")}</h2>
+            <ol className="mt-3 space-y-3">
+              {copy.steps.map((step, index) => (
+                <li key={step} className="flex gap-3 text-base leading-relaxed sm:text-lg">
+                  <span className="grid size-8 shrink-0 place-items-center rounded-full bg-primary font-heading text-sm font-semibold text-primary-foreground">
+                    {index + 1}
+                  </span>
+                  <span className="pt-0.5">{step}</span>
+                </li>
+              ))}
+            </ol>
+            <p className="mt-4 flex items-start gap-2 rounded-2xl bg-muted p-3 text-sm leading-relaxed">
+              <HeartPulse className="mt-0.5 size-4 shrink-0 text-coral" aria-hidden />
+              {t("common.painStop")}
+            </p>
+          </section>
 
-          <SideStatus
-            stretch={stretch}
-            side={side}
-            sides={sides}
-            onSetSide={onSetSide}
-          />
+          <SideStatus stretch={stretch} side={side} sides={sides} onSetSide={onSetSide} />
 
           <HoldControls
             seconds={seconds}
@@ -309,30 +394,90 @@ function SideStatus({
   sides: { left: boolean; right: boolean };
   onSetSide: (side: Side) => void;
 }) {
+  const { t } = useI18n();
   if (!stretch.sided) {
-    return <p className="mt-6 text-base font-medium">Both sides together</p>;
+    return (
+      <p className="mt-5 inline-flex items-center gap-2 rounded-full bg-muted px-3 py-1.5 text-sm font-semibold">
+        <ArrowLeftRight className="size-4 text-primary" aria-hidden />
+        {t("common.bothTogether")}
+      </p>
+    );
   }
   const untouched = !sides.left && !sides.right;
   return (
-    <div className="mt-6">
-      <p className="text-base font-medium">
-        {side === "left" ? "Left side" : "Right side"}
-        {sides[side] ? " · held" : ""}
-      </p>
-      <p className="text-sm text-muted-foreground">
-        {sides.left ? "Left done" : "Left to do"}
-        {" · "}
-        {sides.right ? "Right done" : "Right to do"}
-      </p>
+    <div className="mt-5">
+      <div className="flex gap-2">
+        {(["left", "right"] as Side[]).map((item) => {
+          const done = sides[item];
+          const current = item === side;
+          return (
+            <span
+              key={item}
+              className={cn(
+                "inline-flex min-h-10 flex-1 items-center justify-center gap-1.5 rounded-2xl border-2 px-3 text-sm font-semibold sm:flex-none sm:px-5",
+                done
+                  ? "border-primary bg-primary text-primary-foreground"
+                  : current
+                    ? "border-primary text-primary"
+                    : "border-border text-muted-foreground",
+              )}
+              aria-current={current ? "step" : undefined}
+            >
+              {done && <Check className="size-4" strokeWidth={3} aria-hidden />}
+              {item === "left" ? t("move.left") : t("move.right")}
+            </span>
+          );
+        })}
+      </div>
       {untouched && side === "left" && (
         <button
           type="button"
-          className="mt-1 inline-flex min-h-11 items-center text-base underline decoration-border underline-offset-4"
+          className="mt-1 inline-flex min-h-11 items-center text-sm font-medium text-primary underline-offset-4 hover:underline"
           onClick={() => onSetSide("right")}
         >
-          Start with the right side
+          {t("move.startRight")}
         </button>
       )}
+    </div>
+  );
+}
+
+function HoldRing({
+  value,
+  total,
+  size,
+  tone,
+  children,
+}: {
+  value: number;
+  total: number;
+  size: number;
+  tone: "primary" | "coral" | "done";
+  children: ReactNode;
+}) {
+  const stroke = size > 100 ? 12 : 7;
+  const radius = (size - stroke) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const fraction = total > 0 ? Math.min(1, Math.max(0, value / total)) : 0;
+  const color = tone === "coral" ? "var(--coral)" : "var(--primary)";
+  return (
+    <div className="relative grid shrink-0 place-items-center" style={{ width: size, height: size }}>
+      <svg width={size} height={size} className="-rotate-90" aria-hidden>
+        <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="var(--muted)" strokeWidth={stroke} />
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          fill="none"
+          stroke={color}
+          strokeWidth={stroke}
+          strokeLinecap="round"
+          strokeDasharray={circumference}
+          strokeDashoffset={circumference * (1 - (tone === "done" ? 1 : fraction))}
+          style={{ transition: "stroke-dashoffset 1s linear" }}
+        />
+      </svg>
+      <div className="absolute inset-0 grid place-items-center text-center">{children}</div>
     </div>
   );
 }
@@ -362,7 +507,9 @@ function HoldControls({
   onSwitch: () => void;
   onNext: (() => void) | null;
 }) {
+  const { t } = useI18n();
   const [remaining, setRemaining] = useState(seconds);
+  const [total, setTotal] = useState(seconds);
   const [running, setRunning] = useState(false);
   const [timerKey, setTimerKey] = useState(resetKey);
   const doneRef = useRef(false);
@@ -384,6 +531,7 @@ function HoldControls({
   if (timerKey !== resetKey) {
     setTimerKey(resetKey);
     setRemaining(seconds);
+    setTotal(seconds);
     setRunning(false);
   }
 
@@ -489,6 +637,12 @@ function HoldControls({
     setRunning(true);
   }
 
+  function addFifteen() {
+    const next = Math.min(90, remaining + 15);
+    setRemaining((current) => Math.min(90, current + 15));
+    setTotal((current) => Math.max(current, next));
+  }
+
   function goNext() {
     if (!onNext || advancedRef.current) return;
     advancedRef.current = true;
@@ -500,26 +654,24 @@ function HoldControls({
   }
 
   const pauseShown = pausing ? (pauseLeft ?? POSE_PAUSE_SECONDS) : null;
-  const clock = pauseShown !== null ? (
-    <p className="font-heading text-4xl leading-tight text-balance" aria-live="polite">
-      {posePauseLabel(pauseShown)}
-    </p>
-  ) : (
-    <p className="font-heading text-6xl tabular-nums leading-none" aria-live="polite">
-      {formatHold(remaining)}
-    </p>
-  );
+  const tone = pauseShown !== null ? "coral" : sideDone ? "done" : "primary";
+  const ringValue = pauseShown !== null ? pauseShown : remaining;
+  const ringTotal = pauseShown !== null ? POSE_PAUSE_SECONDS : total;
+  const caption = running ? t("move.ringHolding") : sideDone ? t("move.ringDone") : t("move.ringReady");
+  const pauseLabel = pauseShown !== null ? t("move.nextIn", { count: pauseShown }) : null;
 
-  const actions = (
-    <div className="flex flex-wrap gap-2">
+  const actions = (compact: boolean) => (
+    <div className={cn("flex flex-wrap gap-2", compact && "justify-end")}>
       {!sideDone && !running && (
-        <Button type="button" size="lg" onClick={startHold}>
-          Start hold
+        <Button type="button" size="lg" className="h-12 rounded-2xl px-5 font-semibold" onClick={startHold}>
+          <Play className="size-4 fill-current" aria-hidden />
+          {t("move.startHold")}
         </Button>
       )}
       {running && (
-        <Button type="button" size="lg" onClick={finishEarly}>
-          Finish early
+        <Button type="button" size="lg" className="h-12 rounded-2xl px-5 font-semibold" onClick={finishEarly}>
+          <Check className="size-4" strokeWidth={3} aria-hidden />
+          {t("move.finishEarly")}
         </Button>
       )}
       {!sideDone && (
@@ -527,45 +679,65 @@ function HoldControls({
           type="button"
           size="lg"
           variant="outline"
-          onClick={() => setRemaining((current) => Math.min(90, current + 15))}
+          className="h-12 rounded-2xl px-4 font-semibold"
+          aria-label={t("move.add15Label")}
+          onClick={addFifteen}
         >
-          Add 15 seconds
+          <Plus className="size-4" aria-hidden />
+          {t("move.add15")}
         </Button>
       )}
       {needsOther && (
-        <Button type="button" size="lg" className="whitespace-normal" onClick={onSwitch}>
-          Switch to the {otherSide} side
+        <Button type="button" size="lg" className="h-12 rounded-2xl px-5 font-semibold whitespace-normal" onClick={onSwitch}>
+          <ArrowLeftRight className="size-4" aria-hidden />
+          {otherSide === "left" ? t("move.switchLeft") : t("move.switchRight")}
         </Button>
       )}
       {bothDone && onNext && (
-        <Button type="button" size="lg" onClick={goNext}>
+        <Button type="button" size="lg" className="h-12 rounded-2xl px-5 font-semibold" onClick={goNext}>
           {nextLabel}
+          <ArrowRight className="size-4" aria-hidden />
         </Button>
       )}
       {bothDone && !onNext && (
-        <p className="self-center text-base">Hold done. Today’s session is unchanged.</p>
+        <p className="self-center text-sm font-medium text-primary">{t("move.libDone")}</p>
       )}
     </div>
   );
 
   return (
     <>
-      <div className="mt-6 hidden md:block">
-        {clock}
-        <div className="mt-4">{actions}</div>
+      <div className="mt-5 hidden items-center gap-6 rounded-3xl border border-border bg-card p-5 shadow-sm md:flex">
+        <HoldRing value={ringValue} total={ringTotal} size={148} tone={tone}>
+          <div aria-live="polite">
+            <p className="font-heading text-4xl font-semibold tabular-nums">
+              {pauseShown !== null ? pauseShown : formatHold(remaining)}
+            </p>
+            <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+              {pauseShown !== null ? t("move.next") : caption}
+            </p>
+          </div>
+        </HoldRing>
+        <div className="min-w-0 flex-1">
+          {pauseLabel && <p className="mb-3 font-heading text-xl font-semibold text-coral">{pauseLabel}</p>}
+          {actions(false)}
+        </div>
       </div>
-      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-background/95 px-4 py-3 backdrop-blur-md md:hidden">
-        <div className="mx-auto flex max-w-lg items-center justify-between gap-3">
-          {pauseShown !== null ? (
-            <p className="font-heading text-xl leading-tight text-balance" aria-live="polite">
-              {posePauseLabel(pauseShown)}
+      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-card/95 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-[0_-8px_30px_-12px_rgb(14_122_103/0.25)] backdrop-blur-xl md:hidden">
+        <div className="mx-auto flex max-w-lg items-center gap-3">
+          <HoldRing value={ringValue} total={ringTotal} size={68} tone={tone}>
+            <p className="font-heading text-base font-semibold tabular-nums" aria-hidden>
+              {pauseShown !== null ? pauseShown : formatHold(remaining)}
             </p>
-          ) : (
-            <p className="font-heading text-4xl tabular-nums" aria-hidden>
-              {formatHold(remaining)}
-            </p>
-          )}
-          <div className="flex flex-wrap justify-end gap-2">{actions}</div>
+          </HoldRing>
+          <div className="min-w-0 flex-1">
+            {pauseLabel && (
+              <p className="mb-1.5 text-right text-sm font-semibold text-coral" aria-live="polite">
+                {pauseLabel}
+              </p>
+            )}
+            {actions(true)}
+          </div>
         </div>
       </div>
     </>
@@ -573,24 +745,34 @@ function HoldControls({
 }
 
 function FormDialog({ stretch }: { stretch: Stretch }) {
+  const i18n = useI18n();
+  const { t } = i18n;
+  const copy = i18n.stretch(stretch);
   return (
     <Dialog>
-      <DialogTrigger className={cn(buttonVariants({ variant: "outline", size: "lg" }))}>
-        Check your form
+      <DialogTrigger className={cn(buttonVariants({ variant: "outline", size: "lg" }), "h-12 rounded-2xl font-semibold")}>
+        <ScanEye className="size-4" aria-hidden />
+        {t("form.button")}
       </DialogTrigger>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-3xl">
+      <DialogContent className="max-h-[90vh] overflow-y-auto rounded-3xl p-6 sm:max-w-3xl">
         <DialogHeader>
-          <DialogTitle className="font-heading text-2xl">Check your form</DialogTitle>
-          <DialogDescription>{stretch.mistake}</DialogDescription>
+          <DialogTitle className="font-heading text-2xl font-semibold">{t("form.title")}</DialogTitle>
+          <DialogDescription className="text-base">{copy.mistake}</DialogDescription>
         </DialogHeader>
         <div className="grid grid-cols-2 gap-3">
-          <figure className="rounded-2xl bg-[#f7f1e6] p-2">
+          <figure className="overflow-hidden rounded-2xl border-2 border-coral/40 bg-accent p-2">
             <StretchFigure id={stretch.id} variant="mistake" />
-            <figcaption className="px-1 pb-1 text-center text-sm">Usual mistake</figcaption>
+            <figcaption className="flex items-center justify-center gap-1.5 px-1 pb-1 text-center text-sm font-semibold text-accent-foreground">
+              <X className="size-4" strokeWidth={3} aria-hidden />
+              {t("form.mistake")}
+            </figcaption>
           </figure>
-          <figure className="rounded-2xl bg-[#f7f1e6] p-2">
+          <figure className="overflow-hidden rounded-2xl border-2 border-primary/40 stage p-2">
             <StretchFigure id={stretch.id} variant="hold" />
-            <figcaption className="px-1 pb-1 text-center text-sm">Aim for this</figcaption>
+            <figcaption className="flex items-center justify-center gap-1.5 px-1 pb-1 text-center text-sm font-semibold text-primary">
+              <Check className="size-4" strokeWidth={3} aria-hidden />
+              {t("form.aim")}
+            </figcaption>
           </figure>
         </div>
       </DialogContent>
@@ -609,51 +791,61 @@ function SkipDialog({
   onSkip: () => void;
   onAlternate: ((id: StretchId) => void) | null;
 }) {
+  const i18n = useI18n();
+  const { t } = i18n;
   const [open, setOpen] = useState(false);
+  const areaLabel = i18n.area(stretch.area);
+  const areaLower = i18n.locale === "en" ? areaLabel.toLowerCase() : areaLabel;
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger className={cn(buttonVariants({ variant: "ghost", size: "lg" }))}>
-        Skip this move
+      <DialogTrigger className={cn(buttonVariants({ variant: "ghost", size: "lg" }), "h-12 rounded-2xl font-semibold text-foreground/75")}>
+        <SkipForward className="size-4" aria-hidden />
+        {t("skip.button")}
       </DialogTrigger>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="rounded-3xl p-6 sm:max-w-md">
         <DialogHeader>
-          <DialogTitle className="font-heading text-2xl">Skip this move</DialogTitle>
-          <DialogDescription>
-            If it hurts, stop. Pain is not part of the stretch.
-            {alternate
-              ? ` Here is another one for the ${stretch.areaLabel.toLowerCase()}.`
-              : ` This set has no second stretch for the ${stretch.areaLabel.toLowerCase()}.`}
+          <DialogTitle className="font-heading text-2xl font-semibold">{t("skip.title")}</DialogTitle>
+          <DialogDescription className="text-base">
+            {t("skip.body")}{" "}
+            {alternate ? t("skip.alt", { area: areaLower }) : t("skip.noAlt", { area: areaLower })}
           </DialogDescription>
         </DialogHeader>
         {alternate && (
-          <div className="flex items-center gap-3 rounded-xl border border-border p-3">
-            <div className="w-20 shrink-0">
+          <div className="flex items-center gap-3 rounded-2xl border border-border bg-background p-3">
+            <div className="w-20 shrink-0 overflow-hidden rounded-xl stage">
               <StretchFigure id={alternate.id} />
             </div>
-            <p className="text-base">{alternate.name}</p>
+            <div>
+              <p className="font-semibold">{i18n.stretch(alternate).name}</p>
+              <p className="text-sm text-muted-foreground">{i18n.stretch(alternate).plain}</p>
+            </div>
           </div>
         )}
         <div className="flex flex-col gap-2">
           {alternate && onAlternate && (
             <Button
               type="button"
+              size="lg"
+              className="h-12 rounded-2xl font-semibold"
               onClick={() => {
                 onAlternate(alternate.id);
                 setOpen(false);
               }}
             >
-              Use this instead
+              {t("skip.use")}
             </Button>
           )}
           <Button
             type="button"
             variant="outline"
+            size="lg"
+            className="h-12 rounded-2xl font-semibold"
             onClick={() => {
               setOpen(false);
               onSkip();
             }}
           >
-            Move on
+            {t("skip.moveOn")}
           </Button>
         </div>
       </DialogContent>

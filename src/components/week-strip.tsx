@@ -1,13 +1,8 @@
 "use client";
 
-import {
-  focusFor,
-  isoDate,
-  shortFocus,
-  weekDates,
-  weekdayName,
-  type Settings,
-} from "@/lib/plan";
+import { Check, Moon } from "lucide-react";
+import { useI18n } from "@/lib/i18n/provider";
+import { focusFor, isoDate, weekDates, type Settings } from "@/lib/plan";
 import { cn } from "cn";
 
 export function WeekStrip({
@@ -27,38 +22,67 @@ export function WeekStrip({
   onSelectToday?: () => void;
   onSelectRest?: () => void;
 }) {
+  const i18n = useI18n();
+  const { t } = i18n;
   const days = weekDates(today);
   const todayKey = isoDate(today);
   const interactive = Boolean(onSelectToday && onSelectRest);
   return (
-    <section className="mt-8">
-      <div className="flex items-baseline justify-between gap-3">
-        <h2 className="font-heading text-2xl">Week</h2>
+    <section>
+      <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+        <h2 className="text-2xl font-semibold">{t("week.title")}</h2>
         <p className="text-sm text-muted-foreground">
-          {interactive
-            ? `Tap ${weekdayName(restDay)} for the rest day.`
-            : "Finished stretch days stay marked."}
+          {interactive ? t("week.tapRest", { day: i18n.weekday(restDay) }) : t("week.marked")}
         </p>
       </div>
-      <ol className="mt-3 grid grid-cols-7 gap-1.5 sm:gap-2">
+      <ol className="mt-4 grid grid-cols-7 gap-1 sm:gap-2">
         {days.map((date) => {
           const key = isoDate(date);
           const isToday = key === todayKey;
           const isRest = date.getDay() === restDay;
           const done = finishedDates.includes(key);
+          const past = key < todayKey;
           const pressed = isRest ? selected === "rest" : isToday && selected === "today";
-          const label = `${weekdayName(date.getDay())}${isToday ? ", today" : ""}${isRest ? ", rest day" : ""}${done ? ", finished" : ""}`;
+          const focus = focusFor(date, { restDay, tightAreas });
+          const label = [
+            i18n.weekday(date.getDay()),
+            isToday && t("week.today"),
+            isRest && t("week.rest"),
+            done && t("week.finished"),
+          ]
+            .filter(Boolean)
+            .join(", ");
           const inner = (
             <>
-              <span className="text-xs sm:text-sm">{weekdayName(date.getDay()).slice(0, 3)}</span>
-              <span className="font-heading text-lg sm:text-xl">{date.getDate()}</span>
+              <span className={cn("text-xs font-medium", isToday ? "text-primary" : "text-muted-foreground")}>
+                {i18n.weekday(date.getDay(), "short")}
+              </span>
               <span
                 className={cn(
-                  "mt-1 h-1.5 w-1.5 rounded-full",
-                  done ? "bg-primary" : isRest ? "border border-primary" : "bg-transparent",
+                  "grid size-10 place-items-center rounded-full font-heading text-base font-semibold transition-all sm:size-12 sm:text-lg",
+                  done
+                    ? "animate-pop bg-primary text-white shadow-md shadow-primary/30"
+                    : isRest
+                      ? "bg-[#e8ebf7] text-[#3d4f8a]"
+                      : isToday
+                        ? "bg-card text-foreground ring-2 ring-coral ring-offset-2 ring-offset-card"
+                        : past
+                          ? "bg-muted text-muted-foreground"
+                          : "bg-muted/60 text-foreground/80",
+                  pressed && !done && "ring-2 ring-primary ring-offset-2 ring-offset-card",
                 )}
-                aria-hidden
-              />
+              >
+                {done ? (
+                  <Check className="size-5" strokeWidth={3} aria-hidden />
+                ) : isRest ? (
+                  <Moon className="size-4" aria-hidden />
+                ) : (
+                  date.getDate()
+                )}
+              </span>
+              <span className="hidden max-w-full truncate text-[0.7rem] text-muted-foreground sm:block">
+                {i18n.focusShort(focus.key)}
+              </span>
             </>
           );
           if (interactive && (isToday || isRest)) {
@@ -69,10 +93,7 @@ export function WeekStrip({
                   aria-label={label}
                   aria-pressed={pressed}
                   onClick={isRest ? onSelectRest : onSelectToday}
-                  className={cn(
-                    "flex min-h-16 w-full flex-col items-center justify-center rounded-xl border text-center",
-                    pressed ? "border-primary bg-card" : "border-border bg-card/60",
-                  )}
+                  className="flex min-h-20 w-full flex-col items-center justify-start gap-1.5 rounded-2xl py-1 hover:bg-muted/60"
                 >
                   {inner}
                 </button>
@@ -82,14 +103,9 @@ export function WeekStrip({
           return (
             <li key={key}>
               <div
-                className={cn(
-                  "flex min-h-16 flex-col items-center justify-center rounded-xl border text-center",
-                  isToday ? "border-primary bg-card" : "border-transparent text-muted-foreground",
-                )}
-                title={shortFocus(
-                  focusFor(date, { restDay, tightAreas }).label,
-                  isRest,
-                )}
+                className="flex min-h-20 flex-col items-center justify-start gap-1.5 py-1"
+                aria-label={label}
+                title={i18n.focusShort(focus.key)}
               >
                 {inner}
               </div>

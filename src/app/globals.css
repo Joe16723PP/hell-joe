@@ -7,9 +7,11 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-sans);
-  --font-mono: var(--font-geist-mono);
-  --font-heading: var(--font-heading);
+  --font-sans: var(--font-body), var(--font-body-th), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: ui-monospace, monospace;
+  --font-heading: var(--font-display), var(--font-display-th), ui-sans-serif, system-ui, sans-serif;
+  --color-sun: var(--sun);
+  --color-coral: var(--coral);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -49,30 +51,32 @@
 }
 
 :root {
-  --background: #f3eadf;
-  --foreground: #2a2118;
-  --card: #faf6ef;
-  --card-foreground: #2a2118;
-  --popover: #faf6ef;
-  --popover-foreground: #2a2118;
-  --primary: #8f3d2c;
-  --primary-foreground: #fffaf6;
-  --secondary: #efe4d4;
-  --secondary-foreground: #2a2118;
-  --muted: #efe6d8;
-  --muted-foreground: #5e5148;
-  --accent: #f0d2c6;
-  --accent-foreground: #6e3224;
-  --destructive: #9c3b32;
-  --border: #e0d3c3;
-  --input: #e0d3c3;
-  --ring: #c45c3e;
+  --background: #f4f7f1;
+  --foreground: #12302a;
+  --card: #ffffff;
+  --card-foreground: #12302a;
+  --popover: #ffffff;
+  --popover-foreground: #12302a;
+  --primary: #0e7a67;
+  --primary-foreground: #ffffff;
+  --secondary: #e4f2eb;
+  --secondary-foreground: #0b4e42;
+  --muted: #edf3ee;
+  --muted-foreground: #587069;
+  --accent: #ffe9dc;
+  --accent-foreground: #a3401a;
+  --destructive: #c2410c;
+  --border: #dbe7e0;
+  --input: #d3e2da;
+  --ring: #14a88e;
+  --sun: #ffb23f;
+  --coral: #ff7452;
   --chart-1: oklch(0.87 0 0);
   --chart-2: oklch(0.556 0 0);
   --chart-3: oklch(0.439 0 0);
   --chart-4: oklch(0.371 0 0);
   --chart-5: oklch(0.269 0 0);
-  --radius: 0.85rem;
+  --radius: 0.9rem;
   --sidebar: oklch(0.985 0 0);
   --sidebar-foreground: oklch(0.145 0 0);
   --sidebar-primary: oklch(0.205 0 0);
@@ -127,11 +131,73 @@
   body {
     @apply bg-background text-foreground;
     background-image:
-      radial-gradient(ellipse at 8% -10%, rgb(196 92 62 / 0.08), transparent 42%),
-      radial-gradient(ellipse at 100% 0%, rgb(42 33 24 / 0.05), transparent 36%);
+      radial-gradient(60rem 30rem at 0% -10%, rgb(20 168 142 / 0.12), transparent 60%),
+      radial-gradient(40rem 24rem at 100% 0%, rgb(255 178 63 / 0.14), transparent 60%);
     background-attachment: fixed;
   }
+  h1,
+  h2,
+  h3 {
+    @apply font-heading;
+  }
+  :lang(th) body {
+    line-height: 1.65;
+  }
   ::selection {
-    background: #f0d2c6;
+    background: #c7efe2;
+  }
+}
+
+@utility stage {
+  background:
+    radial-gradient(circle at 50% 38%, rgb(255 255 255 / 0.95), transparent 62%),
+    linear-gradient(160deg, #fff5e8 0%, #e6f5ee 100%);
+}
+
+@utility hero-gradient {
+  background:
+    radial-gradient(28rem 18rem at 100% 0%, rgb(255 178 63 / 0.38), transparent 70%),
+    radial-gradient(24rem 16rem at 0% 100%, rgb(94 234 212 / 0.28), transparent 70%),
+    linear-gradient(135deg, #0b5f51 0%, #0e7a67 55%, #13957b 100%);
+}
+
+@keyframes pop-in {
+  0% {
+    transform: scale(0.6);
+    opacity: 0;
+  }
+  70% {
+    transform: scale(1.08);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes breathe {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.35;
+  }
+  50% {
+    transform: scale(1.06);
+    opacity: 0.6;
+  }
+}
+
+@utility animate-pop {
+  animation: pop-in 520ms cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
+}
+
+@utility animate-breathe {
+  animation: breathe 4s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-pop,
+  .animate-breathe {
+    animation: none;
   }
 }

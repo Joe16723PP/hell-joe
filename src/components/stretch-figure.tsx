@@ -1,3 +1,5 @@
+"use client";
+
 import type { ReactNode } from "react";
 import { EXTRA_POSES } from "@/components/extra-poses";
 import {
@@ -14,6 +16,7 @@ import {
   type Pt,
 } from "@/components/figure-parts";
 import { getStretch, type StretchId } from "@/lib/catalog";
+import { useI18n } from "@/lib/i18n/provider";
 import { cn } from "cn";
 
 export type { FigureVariant };
@@ -293,14 +296,13 @@ export function StretchFigure({
   mirror?: boolean;
   className?: string;
 }) {
+  const i18n = useI18n();
   const stretch = getStretch(id);
-  const name = stretch?.name ?? "Stretch";
-  const label =
-    variant === "mistake"
-      ? `${name}, the usual mistake`
-      : variant === "setup"
-        ? `${name}, the start`
-        : `${name}, the hold`;
+  const name = stretch ? i18n.stretch(stretch).name : id;
+  const label = i18n.t(
+    variant === "mistake" ? "figure.mistake" : variant === "setup" ? "figure.setup" : "figure.hold",
+    { name },
+  );
   return (
     <svg
       viewBox="0 0 360 440"

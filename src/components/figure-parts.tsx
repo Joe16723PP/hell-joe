@@ -1,8 +1,8 @@
 export type FigureVariant = "hold" | "setup" | "mistake";
 
-export const INK = "#2a2118";
-export const MUSCLE = "#c45c3e";
-export const PAPER = "#f7f1e6";
+export const INK = "#1d3b35";
+export const MUSCLE = "#ff6a45";
+export const PAPER = "#fffaf2";
 
 export type Pt = [number, number];
 
@@ -96,7 +96,7 @@ export function Foot({ at, dir = 1 }: { at: Pt; dir?: number }) {
 export function Ground() {
   return (
     <g>
-      <ellipse cx="180" cy="408" rx="108" ry="9" fill="#e7dccb" />
+      <ellipse cx="180" cy="408" rx="108" ry="9" fill="#cfe6db" />
       <path
         d="M48 404 H312"
         fill="none"

@@ -1,17 +1,29 @@
-import type { Metadata } from "next";
-import { Fraunces, Source_Sans_3 } from "next/font/google";
+import type { Metadata, Viewport } from "next";
+import { Anuphan, Outfit, Plus_Jakarta_Sans, Prompt } from "next/font/google";
 import { AppShell } from "@/components/app-shell";
+import { I18nProvider } from "@/lib/i18n/provider";
 import { StretchProvider } from "@/lib/store";
 import "./globals.css";
 
-const sourceSans = Source_Sans_3({
+const body = Plus_Jakarta_Sans({
   subsets: ["latin"],
-  variable: "--font-sans",
+  variable: "--font-body",
 });
 
-const fraunces = Fraunces({
+const bodyTh = Anuphan({
+  subsets: ["thai"],
+  variable: "--font-body-th",
+});
+
+const display = Outfit({
   subsets: ["latin"],
-  variable: "--font-heading",
+  variable: "--font-display",
+});
+
+const displayTh = Prompt({
+  subsets: ["thai"],
+  weight: ["500", "600"],
+  variable: "--font-display-th",
 });
 
 export const metadata: Metadata = {
@@ -20,16 +32,23 @@ export const metadata: Metadata = {
     "A short daily stretch. Still pictures, the muscle to feel, and the usual mistake.",
 };
 
+export const viewport: Viewport = {
+  themeColor: "#0e7a67",
+};
+
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
-      className={`${sourceSans.variable} ${fraunces.variable} h-full antialiased`}
+      suppressHydrationWarning
+      className={`${body.variable} ${bodyTh.variable} ${display.variable} ${displayTh.variable} h-full antialiased`}
     >
       <body className="min-h-full bg-background text-foreground">
-        <StretchProvider>
-          <AppShell>{children}</AppShell>
-        </StretchProvider>
+        <I18nProvider>
+          <StretchProvider>
+            <AppShell>{children}</AppShell>
+          </StretchProvider>
+        </I18nProvider>
       </body>
     </html>
   );
