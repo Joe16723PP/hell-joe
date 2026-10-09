@@ -17,7 +17,9 @@ import {
   type Stretch,
   type TightId,
 } from "@/lib/catalog";
+import { type ExerciseMove, type ExercisePreset } from "@/lib/exercise";
 import { PRESETS_TH, STRETCHES_TH, type PresetCopy, type StretchCopy } from "@/lib/i18n/catalog-th";
+import { EXERCISE_PRESETS_TH, EXERCISES_TH } from "@/lib/i18n/exercise-th";
 import { MESSAGES, en, type Locale, type MessageKey } from "@/lib/i18n/messages";
 import type { FocusKey } from "@/lib/plan";
 
@@ -33,6 +35,12 @@ export type I18n = {
   longDate: (date: Date) => string;
   stretch: (stretch: Stretch) => StretchCopy & { areaLabel: string; positionLabel: string };
   preset: (preset: Preset) => PresetCopy;
+  exercise: (move: ExerciseMove) => StretchCopy & {
+    patternLabel: string;
+    positionLabel: string;
+    optionLabel: string;
+  };
+  exercisePreset: (preset: ExercisePreset) => { name: string; blurb: string };
   area: (idOrLabel: string) => string;
   position: (id: PositionId) => string;
   tight: (id: TightId) => string;
@@ -143,6 +151,29 @@ function buildI18n(locale: Locale, setLocale: (locale: Locale) => void): I18n {
       locale === "th"
         ? PRESETS_TH[preset.id as PresetId]
         : { name: preset.name, blurb: preset.blurb, where: preset.where },
+    exercise: (move) => {
+      const copy: StretchCopy =
+        locale === "th"
+          ? EXERCISES_TH[move.id]
+          : {
+              name: move.name,
+              plain: move.plain,
+              anatomical: move.anatomical,
+              setup: move.setup,
+              steps: move.steps,
+              mistake: move.mistake,
+            };
+      return {
+        ...copy,
+        patternLabel: t(`pattern.${move.pattern}` as MessageKey),
+        positionLabel: t(`position.${move.position}` as MessageKey),
+        optionLabel: t(move.option === "core" ? "exercise.optionCore" : "exercise.optionMuscle"),
+      };
+    },
+    exercisePreset: (preset) =>
+      locale === "th"
+        ? EXERCISE_PRESETS_TH[preset.id]
+        : { name: preset.name, blurb: preset.blurb },
     area,
     position,
     tight: (id) => t(`tight.${id}` as MessageKey),

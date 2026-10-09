@@ -117,7 +117,6 @@ export function LibraryMove({ stretchId }: { stretchId: string }) {
     return (
       <EmptyState
         title={t("move.libMissingTitle")}
-        body={t("move.libMissingBody")}
         href="/library"
         cta={t("move.backLibrary")}
       />
@@ -245,6 +244,9 @@ function MoveView({
   const sideDone = stretch.sided ? sides[side] : sides.left;
   const otherSide: Side = side === "left" ? "right" : "left";
   const needsOther = stretch.sided && sideDone && !sides[otherSide];
+  const [formOpen, setFormOpen] = useState(false);
+  const [skipOpen, setSkipOpen] = useState(false);
+  const frozen = formOpen || skipOpen;
 
   return (
     <main className="mx-auto w-full max-w-6xl px-4 py-4 pb-44 md:px-8 md:py-8 md:pb-10">
@@ -366,16 +368,18 @@ function MoveView({
             onCompleteHold={onCompleteHold}
             onSwitch={() => onSetSide(otherSide)}
             onNext={onNext}
+            frozen={frozen}
           />
 
           <div className="mt-4 flex flex-col gap-2 sm:flex-row">
-            <FormDialog stretch={stretch} />
+            <FormDialog stretch={stretch} onOpenChange={setFormOpen} />
             {onSkip && (
               <SkipDialog
                 stretch={stretch}
                 alternate={alternate}
                 onSkip={onSkip}
                 onAlternate={onAlternate}
+                onOpenChange={setSkipOpen}
               />
             )}
           </div>
@@ -496,6 +500,7 @@ function HoldControls({
   onCompleteHold,
   onSwitch,
   onNext,
+  frozen,
 }: {
   seconds: number;
   resetKey: string;
@@ -508,6 +513,7 @@ function HoldControls({
   onCompleteHold: () => void;
   onSwitch: () => void;
   onNext: (() => void) | null;
+  frozen: boolean;
 }) {
   const { t } = useI18n();
   const [remaining, setRemaining] = useState(seconds);
@@ -519,6 +525,7 @@ function HoldControls({
   const onNextRef = useRef(onNext);
   const advancedRef = useRef(false);
   const pauseIntervalRef = useRef<number | null>(null);
+  const pauseLeftRef = useRef<number | null>(null);
   const canAdvance = onNext !== null;
   const pausing = shouldPauseForNextPose({ poseComplete: bothDone, canAdvance });
   const pauseToken = pausing ? resetKey : "";
@@ -547,8 +554,12 @@ function HoldControls({
   }, [onNext]);
 
   useEffect(() => {
-    if (!pausing) return;
-    let left = POSE_PAUSE_SECONDS;
+    pauseLeftRef.current = pauseLeft;
+  }, [pauseLeft]);
+
+  useEffect(() => {
+    if (!pausing || frozen) return;
+    let left = pauseLeftRef.current ?? POSE_PAUSE_SECONDS;
     let cancelled = false;
     const id = window.setInterval(() => {
       if (cancelled) return;
@@ -568,7 +579,7 @@ function HoldControls({
       window.clearInterval(id);
       if (pauseIntervalRef.current === id) pauseIntervalRef.current = null;
     };
-  }, [pausing, resetKey]);
+  }, [frozen, pausing, resetKey]);
 
   useEffect(() => {
     remainingRef.current = remaining;
@@ -580,7 +591,7 @@ function HoldControls({
   }, [tick]);
 
   useEffect(() => {
-    if (!running || !tick) return;
+    if (!running || !tick || frozen) return;
     const id = window.setInterval(() => {
       if (
         shouldPlayHoldTick({
@@ -594,10 +605,10 @@ function HoldControls({
       }
     }, 1000);
     return () => window.clearInterval(id);
-  }, [running, tick]);
+  }, [frozen, running, tick]);
 
   useEffect(() => {
-    if (!running) return;
+    if (!running || frozen) return;
     const id = window.setInterval(() => {
       setRemaining((current) => {
         if (current <= 1) {
@@ -614,7 +625,7 @@ function HoldControls({
       });
     }, 1000);
     return () => window.clearInterval(id);
-  }, [onCompleteHold, running]);
+  }, [frozen, onCompleteHold, running]);
 
   function finishEarly() {
     setRunning(false);
@@ -746,12 +757,18 @@ function HoldControls({
   );
 }
 
-function FormDialog({ stretch }: { stretch: Stretch }) {
+function FormDialog({
+  stretch,
+  onOpenChange,
+}: {
+  stretch: Stretch;
+  onOpenChange: (open: boolean) => void;
+}) {
   const i18n = useI18n();
   const { t } = i18n;
   const copy = i18n.stretch(stretch);
   return (
-    <Dialog>
+    <Dialog onOpenChange={onOpenChange}>
       <DialogTrigger className={cn(buttonVariants({ variant: "outline", size: "lg" }), "h-12 rounded-2xl font-semibold")}>
         <ScanEye className="size-4" aria-hidden />
         {t("form.button")}
@@ -774,11 +791,13 @@ function SkipDialog({
   alternate,
   onSkip,
   onAlternate,
+  onOpenChange,
 }: {
   stretch: Stretch;
   alternate: Stretch | null;
   onSkip: () => void;
   onAlternate: ((id: StretchId) => void) | null;
+  onOpenChange?: (open: boolean) => void;
 }) {
   const i18n = useI18n();
   const { t } = i18n;
@@ -786,7 +805,13 @@ function SkipDialog({
   const areaLabel = i18n.area(stretch.area);
   const areaLower = i18n.locale === "en" ? areaLabel.toLowerCase() : areaLabel;
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog
+      open={open}
+      onOpenChange={(next) => {
+        setOpen(next);
+        onOpenChange?.(next);
+      }}
+    >
       <DialogTrigger className={cn(buttonVariants({ variant: "ghost", size: "lg" }), "h-12 rounded-2xl font-semibold text-foreground/75")}>
         <SkipForward className="size-4" aria-hidden />
         {t("skip.button")}

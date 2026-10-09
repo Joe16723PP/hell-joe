@@ -15,15 +15,34 @@ import {
   getStretch,
 } from "@/lib/catalog";
 import {
+  BRACE_DOSE,
+  BRACE_MOVE_IDS,
+  afterExercisePause,
+  afterExerciseWork,
+  doseFor,
+  exerciseMoveIds,
+  getExercise,
+  presetIdFor,
+  replaceExerciseMove,
+  skipExerciseMove,
+  suggestedFamily,
+  type ExercisePhase,
+  type ExerciseSessionState,
+} from "@/lib/exercise";
+import {
   currentStreak,
   focusFor,
   isoDate,
   sessionMoveIds,
   startOfToday,
+  type ExerciseChoice,
+  type ExerciseFamily,
+  type ExerciseMinutes,
   type Settings,
 } from "@/lib/plan";
 
-const STORAGE_KEY = "stretchday-v1";
+const STORAGE_KEY = "tuengwa-v1";
+const LEGACY_KEY = "stretchday-v1";
 
 export type Side = "left" | "right";
 
@@ -56,9 +75,33 @@ export type Recap = {
   counted: boolean;
 };
 
+export type ExerciseSession = ExerciseSessionState;
+
+export type ExerciseFinished = {
+  date: string;
+  patterns: string[];
+  option: ExerciseChoice;
+};
+
+export type ExerciseRecap = {
+  date: string;
+  kind: "exercise" | "brace";
+  option: ExerciseChoice;
+  completed: { id: string; name: string; pattern: string }[];
+  skipped: { id: string; name: string }[];
+  patterns: string[];
+  streak: number;
+  counted: boolean;
+};
+
 type TodayPlan = {
   date: string;
   presetId: string;
+};
+
+type ExercisePlan = {
+  date: string;
+  family: ExerciseFamily;
 };
 
 type Data = {
@@ -68,16 +111,24 @@ type Data = {
   finished: FinishedSession[];
   recap: Recap | null;
   lastReminder: string | null;
+  exercisePlan: ExercisePlan | null;
+  exerciseSession: ExerciseSession | null;
+  exerciseFinished: ExerciseFinished[];
+  exerciseRecap: ExerciseRecap | null;
 };
 
 type Store = {
   ready: boolean;
   settings: Settings;
   planPresetId: string;
+  exerciseFamily: ExerciseFamily;
   session: Session | null;
   finished: FinishedSession[];
   recap: Recap | null;
   lastReminder: string | null;
+  exerciseSession: ExerciseSession | null;
+  exerciseFinished: ExerciseFinished[];
+  exerciseRecap: ExerciseRecap | null;
   viewingRest: boolean;
   setViewingRest: (value: boolean) => void;
   saveSetup: (settings: Settings) => void;
@@ -91,6 +142,22 @@ type Store = {
   skip: () => void;
   useAlternate: (id: StretchId) => void;
   markReminded: (date: string) => void;
+  setExerciseOn: (on: boolean) => void;
+  setExerciseOption: (option: ExerciseChoice) => void;
+  setExerciseLength: (length: ExerciseMinutes) => void;
+  setExerciseFamily: (family: ExerciseFamily) => void;
+  acceptExerciseIntro: (choice: {
+    on: boolean;
+    option: ExerciseChoice;
+    length: ExerciseMinutes;
+  }) => void;
+  startExercise: (kind?: "exercise" | "brace") => void;
+  startExerciseOver: () => void;
+  countExerciseRep: () => void;
+  finishExerciseEffort: () => void;
+  advanceExercisePause: () => void;
+  skipExercise: () => void;
+  useExerciseAlternate: (id: string) => void;
 };
 
 const DEFAULT_SETTINGS: Settings = {
@@ -100,6 +167,10 @@ const DEFAULT_SETTINGS: Settings = {
   restDay: 0,
   reminderOn: false,
   reminderTime: "08:00",
+  exerciseOn: true,
+  exerciseOption: "core",
+  exerciseLength: 15,
+  exerciseIntroSeen: false,
 };
 
 const SERVER_SNAPSHOT: Data = {
@@ -109,9 +180,25 @@ const SERVER_SNAPSHOT: Data = {
   finished: [],
   recap: null,
   lastReminder: null,
+  exercisePlan: null,
+  exerciseSession: null,
+  exerciseFinished: [],
+  exerciseRecap: null,
 };
 
 const StretchContext = createContext<Store | null>(null);
+
+function isExerciseChoice(value: unknown): value is ExerciseChoice {
+  return value === "core" || value === "muscle";
+}
+
+function isExerciseLength(value: unknown): value is ExerciseMinutes {
+  return value === 10 || value === 15 || value === 20;
+}
+
+function isFamily(value: unknown): value is ExerciseFamily {
+  return value === "front" || value === "side" || value === "all-fours" || value === "bridge";
+}
 
 function sanitizeSettings(value: Partial<Settings> | undefined): Settings {
   const length = value?.length === 5 || value?.length === 15 ? value.length : 10;
@@ -132,15 +219,18 @@ function sanitizeSettings(value: Partial<Settings> | undefined): Settings {
     restDay,
     reminderOn: Boolean(value?.reminderOn),
     reminderTime: value?.reminderTime || "08:00",
+    exerciseOn: value?.exerciseOn !== false,
+    exerciseOption: isExerciseChoice(value?.exerciseOption) ? value.exerciseOption : "core",
+    exerciseLength: isExerciseLength(value?.exerciseLength) ? value.exerciseLength : 15,
+    exerciseIntroSeen: Boolean(value?.exerciseIntroSeen),
   };
 }
 
-function readStorage(): Data | null {
+function parseData(raw: string): Data | null {
   try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (!raw) return null;
     const parsed = JSON.parse(raw) as Partial<Data>;
     if (!parsed.settings) return null;
+    const exercisePlan = parsed.exercisePlan;
     return {
       settings: sanitizeSettings(parsed.settings),
       plan:
@@ -151,7 +241,30 @@ function readStorage(): Data | null {
       finished: Array.isArray(parsed.finished) ? parsed.finished : [],
       recap: parsed.recap ?? null,
       lastReminder: typeof parsed.lastReminder === "string" ? parsed.lastReminder : null,
+      exercisePlan:
+        exercisePlan && exercisePlan.date && isFamily(exercisePlan.family)
+          ? { date: exercisePlan.date, family: exercisePlan.family }
+          : null,
+      exerciseSession: parsed.exerciseSession ?? null,
+      exerciseFinished: Array.isArray(parsed.exerciseFinished) ? parsed.exerciseFinished : [],
+      exerciseRecap: parsed.exerciseRecap ?? null,
     };
+  } catch {
+    return null;
+  }
+}
+
+function readStorage(): Data | null {
+  try {
+    const current = window.localStorage.getItem(STORAGE_KEY);
+    if (current) return parseData(current);
+    const legacy = window.localStorage.getItem(LEGACY_KEY);
+    if (!legacy) return null;
+    const migrated = parseData(legacy);
+    if (!migrated) return null;
+    migrated.settings.exerciseIntroSeen = false;
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(migrated));
+    return migrated;
   } catch {
     return null;
   }
@@ -159,6 +272,23 @@ function readStorage(): Data | null {
 
 function emptySides() {
   return { left: false, right: false };
+}
+
+function dropStaleSession(loaded: Data, today: string) {
+  let changed = false;
+  if (loaded.session && loaded.session.date !== today && loaded.session.status === "active") {
+    loaded.session = null;
+    changed = true;
+  }
+  if (
+    loaded.exerciseSession &&
+    loaded.exerciseSession.date !== today &&
+    loaded.exerciseSession.status === "active"
+  ) {
+    loaded.exerciseSession = null;
+    changed = true;
+  }
+  if (changed) window.localStorage.setItem(STORAGE_KEY, JSON.stringify(loaded));
 }
 
 let snapshot: Data = SERVER_SNAPSHOT;
@@ -191,19 +321,44 @@ function getSnapshot(): Data {
     clientReady = true;
     const loaded = readStorage();
     if (loaded) {
-      const today = isoDate(startOfToday());
-      if (
-        loaded.session &&
-        loaded.session.date !== today &&
-        loaded.session.status === "active"
-      ) {
-        loaded.session = null;
-        window.localStorage.setItem(STORAGE_KEY, JSON.stringify(loaded));
-      }
+      dropStaleSession(loaded, isoDate(startOfToday()));
       snapshot = loaded;
     }
   }
   return snapshot;
+}
+
+function createExerciseSession(
+  todayKey: string,
+  settings: Settings,
+  family: ExerciseFamily,
+  kind: "exercise" | "brace",
+): ExerciseSession {
+  const brace = kind === "brace";
+  const option: ExerciseChoice = brace ? "core" : settings.exerciseOption;
+  const length = settings.exerciseLength;
+  const dose = brace ? BRACE_DOSE : doseFor(option, length);
+  const presetId = brace ? "brace" : presetIdFor(option, family);
+  return {
+    date: todayKey,
+    kind,
+    option,
+    presetId,
+    length,
+    moveIds: brace ? [...BRACE_MOVE_IDS] : exerciseMoveIds(presetId, length),
+    index: 0,
+    setIndex: 0,
+    sets: dose.sets,
+    repsTarget: dose.reps,
+    holdSeconds: dose.hold,
+    restSeconds: dose.rest,
+    side: "left",
+    reps: 0,
+    phase: "work" satisfies ExercisePhase,
+    completed: [],
+    skipped: [],
+    status: "active",
+  };
 }
 
 export function StretchProvider({ children }: { children: ReactNode }) {
@@ -217,11 +372,21 @@ export function StretchProvider({ children }: { children: ReactNode }) {
   const suggested = focusFor(today, data.settings).presetId;
   const planPresetId =
     data.plan && data.plan.date === todayKey ? data.plan.presetId : suggested;
+  const exerciseFamily =
+    data.exercisePlan && data.exercisePlan.date === todayKey
+      ? data.exercisePlan.family
+      : suggestedFamily(today, data.settings.restDay);
 
   const api = useMemo<Store>(() => {
     const liveSession =
       data.session && data.session.date === todayKey && data.session.status === "active"
         ? data.session
+        : null;
+    const liveExercise =
+      data.exerciseSession &&
+      data.exerciseSession.date === todayKey &&
+      data.exerciseSession.status === "active"
+        ? data.exerciseSession
         : null;
 
     function buildRecap(session: Session, held: string[], skipped: string[]): Recap {
@@ -254,14 +419,57 @@ export function StretchProvider({ children }: { children: ReactNode }) {
       };
     }
 
+    function buildExerciseRecap(session: ExerciseSession): ExerciseRecap {
+      const completed = session.completed
+        .map((id) => getExercise(id))
+        .filter((move) => move !== undefined)
+        .map((move) => ({ id: move.id, name: move.name, pattern: move.pattern }));
+      const skipped = session.skipped
+        .map((id) => getExercise(id))
+        .filter((move) => move !== undefined)
+        .map((move) => ({ id: move.id, name: move.name }));
+      const patterns = [...new Set(completed.map((move) => move.pattern))];
+      const counted = session.kind === "exercise" && completed.length > 0;
+      const finishedDates = data.exerciseFinished.map((entry) => entry.date);
+      const nextDates = counted
+        ? [...new Set([...finishedDates, session.date])]
+        : finishedDates;
+      return {
+        date: session.date,
+        kind: session.kind,
+        option: session.option,
+        completed,
+        skipped,
+        patterns,
+        streak: currentStreak(nextDates, data.settings.restDay, today),
+        counted,
+      };
+    }
+
+    function settleExercise(current: Data, session: ExerciseSession): Data {
+      if (session.status !== "done") return { ...current, exerciseSession: session };
+      const recap = buildExerciseRecap(session);
+      const exerciseFinished = recap.counted
+        ? [
+            ...current.exerciseFinished.filter((entry) => entry.date !== session.date),
+            { date: session.date, patterns: recap.patterns, option: session.option },
+          ]
+        : current.exerciseFinished;
+      return { ...current, exerciseSession: session, exerciseRecap: recap, exerciseFinished };
+    }
+
     return {
       ready,
       settings: data.settings,
       planPresetId,
+      exerciseFamily,
       session: liveSession,
       finished: data.finished,
       recap: data.recap,
       lastReminder: data.lastReminder,
+      exerciseSession: liveExercise,
+      exerciseFinished: data.exerciseFinished,
+      exerciseRecap: data.exerciseRecap,
       viewingRest,
       setViewingRest,
       saveSetup: (settings) => {
@@ -417,10 +625,95 @@ export function StretchProvider({ children }: { children: ReactNode }) {
           return { ...current, lastReminder: date };
         });
       },
+      setExerciseOn: (on) => {
+        update((current) => ({
+          ...current,
+          settings: { ...current.settings, exerciseOn: on, exerciseIntroSeen: true },
+        }));
+      },
+      setExerciseOption: (option) => {
+        if (liveExercise?.kind === "exercise") return;
+        update((current) => ({
+          ...current,
+          settings: { ...current.settings, exerciseOption: option },
+        }));
+      },
+      setExerciseLength: (length) => {
+        if (liveExercise?.kind === "exercise") return;
+        update((current) => ({
+          ...current,
+          settings: { ...current.settings, exerciseLength: length },
+        }));
+      },
+      setExerciseFamily: (family) => {
+        if (liveExercise?.kind === "exercise") return;
+        update((current) => ({
+          ...current,
+          exercisePlan: { date: todayKey, family },
+        }));
+      },
+      acceptExerciseIntro: (choice) => {
+        update((current) => ({
+          ...current,
+          settings: {
+            ...current.settings,
+            exerciseOn: choice.on,
+            exerciseOption: choice.option,
+            exerciseLength: choice.length,
+            exerciseIntroSeen: true,
+          },
+        }));
+      },
+      startExercise: (kind = "exercise") => {
+        const session = createExerciseSession(todayKey, data.settings, exerciseFamily, kind);
+        update((current) => ({ ...current, exerciseSession: session }));
+      },
+      startExerciseOver: () => {
+        update((current) => ({ ...current, exerciseSession: null }));
+      },
+      countExerciseRep: () => {
+        update((current) => {
+          const session = current.exerciseSession;
+          if (!session || session.status !== "active" || session.phase !== "work") return current;
+          const nextReps = session.reps + 1;
+          if (nextReps >= session.repsTarget) {
+            return settleExercise(current, afterExerciseWork({ ...session, reps: nextReps }));
+          }
+          return { ...current, exerciseSession: { ...session, reps: nextReps } };
+        });
+      },
+      finishExerciseEffort: () => {
+        update((current) => {
+          const session = current.exerciseSession;
+          if (!session || session.status !== "active" || session.phase !== "work") return current;
+          return settleExercise(current, afterExerciseWork(session));
+        });
+      },
+      advanceExercisePause: () => {
+        update((current) => {
+          const session = current.exerciseSession;
+          if (!session || session.status !== "active" || session.phase === "work") return current;
+          return settleExercise(current, afterExercisePause(session));
+        });
+      },
+      skipExercise: () => {
+        update((current) => {
+          const session = current.exerciseSession;
+          if (!session || session.status !== "active") return current;
+          return settleExercise(current, skipExerciseMove(session));
+        });
+      },
+      useExerciseAlternate: (id) => {
+        update((current) => {
+          const session = current.exerciseSession;
+          if (!session || session.status !== "active") return current;
+          return { ...current, exerciseSession: replaceExerciseMove(session, id) };
+        });
+      },
     };
     // today is derived from todayKey for the open session.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [data, planPresetId, ready, todayKey, viewingRest]);
+  }, [data, exerciseFamily, planPresetId, ready, todayKey, viewingRest]);
 
   return <StretchContext.Provider value={api}>{children}</StretchContext.Provider>;
 }

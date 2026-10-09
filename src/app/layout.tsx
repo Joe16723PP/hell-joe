@@ -27,9 +27,9 @@ const displayTh = Prompt({
 });
 
 export const metadata: Metadata = {
-  title: "Stretchday",
+  title: "TuengWa.dev",
   description:
-    "A short daily stretch. Still pictures, the muscle to feel, and the usual mistake.",
+    "A few minutes of stretching a day, with clear pictures and tips to get each move right.",
 };
 
 export const viewport: Viewport = {

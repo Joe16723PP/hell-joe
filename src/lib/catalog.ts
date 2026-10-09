@@ -102,12 +102,12 @@ export const STRETCHES: Stretch[] = [
     seconds: 30,
     setup: null,
     steps: [
-      "Sit tall. Drop both shoulders away from the ears.",
-      "Tilt one ear toward that shoulder, only until the opposite side of the neck feels a steady pull.",
-      "Breathe and hold. The opposite hand stays in the lap. Do not pull the head.",
+      "Sit tall and drop both shoulders away from your ears.",
+      "Tilt one ear toward that shoulder until the other side of your neck feels a gentle pull.",
+      "Rest your other hand in your lap and breathe. No need to pull on your head.",
     ],
     mistake:
-      "The shoulder lifts to meet the ear. Keep that shoulder heavy so the neck can lengthen.",
+      "Your shoulder creeps up to your ear. Let it drop so your neck can stretch.",
     alternate: "neck-turn",
   },
   {
@@ -124,7 +124,7 @@ export const STRETCHES: Stretch[] = [
     steps: [
       "Sit tall and look straight ahead. Let the shoulders rest.",
       "Draw the chin straight back, as if you were making a soft double chin. The eyes stay level.",
-      "Breathe and hold. The front of the neck should feel a small, steady effort.",
+      "Hold here and breathe slowly. The front of the neck should feel a small, steady effort.",
     ],
     mistake:
       "The chin tips down and the head nods. Keep the eyes level and slide the chin back.",
@@ -144,7 +144,7 @@ export const STRETCHES: Stretch[] = [
     steps: [
       "Sit tall, both shoulders heavy, and look forward.",
       "Turn the head until you look over one shoulder. Stop at a steady pull on the opposite side.",
-      "Breathe and hold. The chin stays level. Do not pull with a hand.",
+      "Hold here and breathe slowly. The chin stays level. Do not pull with a hand.",
     ],
     mistake:
       "The shoulder lifts and the chin juts. Keep the shoulder down and the chin level as you turn.",
@@ -164,7 +164,7 @@ export const STRETCHES: Stretch[] = [
     steps: [
       "Sit tall. Bring one arm across the chest at about shoulder height.",
       "The other hand rests above the elbow and gives a light hug. Keep the shoulder down.",
-      "Breathe and hold. The stretch should sit on the back of the shoulder, not the neck.",
+      "Hold here and breathe slowly. The stretch should sit on the back of the shoulder, not the neck.",
     ],
     mistake:
       "The elbow rides up and the shoulder shrugs. Keep the elbow near shoulder height and the shoulder dropped.",
@@ -184,7 +184,7 @@ export const STRETCHES: Stretch[] = [
     steps: [
       "Stand tall beside a wall if you want a hand for balance.",
       "Reach one arm behind the waist, palm out. Let that shoulder blade slide down the back.",
-      "Breathe and hold. A small chest lift is enough. Do not force the hand upward.",
+      "Hold here and breathe slowly. A small chest lift is enough. Do not force the hand upward.",
     ],
     mistake:
       "The shoulder shrugs and the ribs flare. Drop the shoulder blade and keep the ribs soft.",
@@ -204,7 +204,7 @@ export const STRETCHES: Stretch[] = [
     steps: [
       "Lie on one side. Rest the head on the bottom arm or a folded towel.",
       "Bring the top arm across the chest and let the hand rest on the floor in front. Keep the shoulder down.",
-      "Breathe and hold. The stretch sits on the back of the top shoulder.",
+      "Hold here and breathe slowly. The stretch sits on the back of the top shoulder.",
     ],
     mistake:
       "The elbow lifts toward the ear and the neck tightens. Keep the elbow near chest height and the neck long.",
@@ -224,7 +224,7 @@ export const STRETCHES: Stretch[] = [
     steps: [
       "Stand tall. Clasp the hands behind the back, or hold a towel if they do not meet.",
       "Draw the shoulders down, then lift the chest. Keep the hands low.",
-      "Breathe and hold. Soften the knees.",
+      "Hold here and breathe slowly. Soften the knees.",
     ],
     mistake:
       "The shoulders shrug toward the ears. Drop the shoulders and let the stretch sit on the front of the chest.",
@@ -244,7 +244,7 @@ export const STRETCHES: Stretch[] = [
     steps: [
       "Stand in a doorway. Set one forearm on the frame, elbow near shoulder height.",
       "Step the same-side foot forward a little and turn the chest gently away until the front of that shoulder opens.",
-      "Breathe and hold. The shoulder stays down, away from the ear.",
+      "Hold here and breathe slowly. The shoulder stays down, away from the ear.",
     ],
     mistake:
       "The shoulder hikes and the low back arches. Drop the shoulder and keep the ribs stacked over the hips.",
@@ -284,10 +284,10 @@ export const STRETCHES: Stretch[] = [
     steps: [
       "From hands and knees, reach one arm under the body, palm up.",
       "Let that shoulder and the side of the head rest toward the floor. The other hand stays planted.",
-      "Breathe and hold. The stretch sits between the shoulder blades, not in the neck.",
+      "Hold here and breathe slowly. The stretch sits between the shoulder blades, not in the neck.",
     ],
     mistake:
-      "The neck cranks to the side and the supporting shoulder collapses. Rest the head and keep the planted shoulder over the wrist.",
+      "Your neck twists to the side and the supporting shoulder drops. Rest your head and keep that shoulder over your wrist.",
     alternate: "hug",
   },
   {
@@ -324,10 +324,10 @@ export const STRETCHES: Stretch[] = [
     steps: [
       "Lie on your back. Bring both knees toward the chest.",
       "Hold the shins or the backs of the thighs. Let the lower back soften toward the floor.",
-      "Breathe and hold. The head stays down. The pull is gentle.",
+      "Hold here and breathe slowly. The head stays down. The pull is gentle.",
     ],
     mistake:
-      "The head and shoulders lift off the floor to yank the knees. Keep the head down and hold the legs where they already are.",
+      "Your head and shoulders lift to pull your knees in. Keep your head down and hold your legs where they already are.",
     alternate: "child",
   },
   {
@@ -347,7 +347,7 @@ export const STRETCHES: Stretch[] = [
       "Breathe into the lower back and hold. Widen the knees if the belly needs room.",
     ],
     mistake:
-      "The hips stay high and the neck crams into the floor. Sit the hips back and rest the forehead, don’t press it.",
+      "Your hips stay high and your neck presses into the floor. Sit your hips back and rest your forehead.",
     alternate: "knees-chest",
   },
   {
@@ -364,7 +364,7 @@ export const STRETCHES: Stretch[] = [
     steps: [
       "Sit tall, both feet flat. Hold the side of the chair or the opposite knee.",
       "Turn the ribs first, then the head, only until the lower back feels a steady twist.",
-      "Breathe and hold. Grow tall on the inhale. Do not force the range.",
+      "Hold here and breathe slowly. Grow tall on the inhale. Do not force the range.",
     ],
     mistake:
       "The shoulder lifts and the neck twists alone. Keep the shoulder down and start the turn from the ribs.",
@@ -384,7 +384,7 @@ export const STRETCHES: Stretch[] = [
     steps: [
       "Kneel on one knee. Step the other foot forward until both knees sit near a right angle.",
       "Tuck the pelvis so the front of the back hip lengthens. Keep the ribs down.",
-      "Breathe and hold. The knee on the floor should feel supported, not pinched.",
+      "Hold here and breathe slowly. The knee on the floor should feel supported, not pinched.",
     ],
     mistake:
       "The lower back arches and the ribs flare. Drop the ribs and tuck the pelvis so the stretch stays on the front of the hip.",
@@ -404,7 +404,7 @@ export const STRETCHES: Stretch[] = [
     steps: [
       "Kneel, then step one foot forward. Both hands rest lightly on that thigh.",
       "Stay tall through the chest and shift the hips forward a little, until the back hip feels a steady pull.",
-      "Breathe and hold. Soften the front knee. The back knee stays comfortable.",
+      "Hold here and breathe slowly. Soften the front knee. The back knee stays comfortable.",
     ],
     mistake:
       "The ribs thrust forward and the lower back pinches. Stack the ribs over the hips and let the stretch stay in front of the back hip.",
@@ -424,7 +424,7 @@ export const STRETCHES: Stretch[] = [
     steps: [
       "Sit tall. Bring the soles of the feet together and let the knees fall out to the sides.",
       "Hold the ankles or the shins. Stay long through the spine. A small hinge is optional.",
-      "Breathe and hold. The knees rest where they rest. Do not press them down.",
+      "Hold here and breathe slowly. The knees rest where they rest. Do not press them down.",
     ],
     mistake:
       "The back rounds and the hands pull the feet in hard. Stay tall and let the knees rest.",
@@ -444,7 +444,7 @@ export const STRETCHES: Stretch[] = [
     steps: [
       "Sit toward the front of the chair, one foot flat. Cross the other ankle over that knee.",
       "Let the crossed knee rest where it rests. Stay tall through the chest.",
-      "Breathe and hold. A small hinge forward is optional if you want more.",
+      "Hold here and breathe slowly. A small hinge forward is optional if you want more.",
     ],
     mistake:
       "The knee is pushed down and the back rounds. Let the knee rest, and stay tall through the chest.",
@@ -464,7 +464,7 @@ export const STRETCHES: Stretch[] = [
     steps: [
       "Lie on your back, both knees bent, feet on the floor.",
       "Cross one ankle over the opposite knee. Let that knee fall open. The head stays down.",
-      "Breathe and hold. A light hand on the thigh is optional. Do not push the knee.",
+      "Hold here and breathe slowly. A light hand on the thigh is optional. Do not push the knee.",
     ],
     mistake:
       "The head lifts and the knee is forced toward the floor. Keep the head down and let the knee rest.",
@@ -472,7 +472,7 @@ export const STRETCHES: Stretch[] = [
   },
   {
     id: "hamstring",
-    name: "Chair hamstring hinge",
+    name: "Seated hamstring stretch",
     area: "legs",
     areaLabel: "Legs",
     plain: "Back of the thigh",
@@ -484,7 +484,7 @@ export const STRETCHES: Stretch[] = [
     steps: [
       "Sit on the front edge of a chair. Extend one heel forward with the knee soft.",
       "Hinge from the hips with a long spine until the back of the thigh feels steady tension.",
-      "Breathe and hold. Do not pull yourself down with the hands.",
+      "Hold here and breathe slowly. Do not pull yourself down with the hands.",
     ],
     mistake:
       "The lower back rounds and the head drops. Keep the spine long and hinge from the hips.",
@@ -504,7 +504,7 @@ export const STRETCHES: Stretch[] = [
     steps: [
       "Place one heel on a chair or step. The standing knee stays soft.",
       "Hinge from the hips with a long spine until the back of the raised thigh feels steady tension.",
-      "Breathe and hold. The foot can stay relaxed. Do not lock the knee.",
+      "Hold here and breathe slowly. The foot can stay relaxed. Do not lock the knee.",
     ],
     mistake:
       "The back rounds and the raised knee locks. Soften that knee and hinge from the hips with a long spine.",
@@ -524,7 +524,7 @@ export const STRETCHES: Stretch[] = [
     steps: [
       "Stand on one leg. Hold a wall or chair if you need the balance.",
       "Bend the other knee and hold the ankle behind you. Point that knee toward the floor.",
-      "Breathe and hold. Stay tall through the front of the hip.",
+      "Hold here and breathe slowly. Stay tall through the front of the hip.",
     ],
     mistake:
       "The knee flares out and the lower back arches. Bring the knee toward the standing leg and drop the ribs.",
@@ -544,7 +544,7 @@ export const STRETCHES: Stretch[] = [
     steps: [
       "Lie on one side. Bend the bottom knee a little if you want a steadier base.",
       "Bend the top knee and hold the ankle behind you. Keep that knee pointing forward, not out.",
-      "Breathe and hold. The front of the thigh and hip should feel the stretch, not the lower back.",
+      "Hold here and breathe slowly. The front of the thigh and hip should feel the stretch, not the lower back.",
     ],
     mistake:
       "The lower back arches and the knee swings forward. Bring the knee back in line and drop the ribs.",
@@ -564,7 +564,7 @@ export const STRETCHES: Stretch[] = [
     steps: [
       "Face a wall and put both hands on it. Step one foot back, heel down.",
       "Bend the front knee and keep the back heel heavy until the calf feels steady tension.",
-      "Breathe and hold. The back toes point toward the wall.",
+      "Hold here and breathe slowly. The back toes point toward the wall.",
     ],
     mistake:
       "The back heel lifts and the foot turns out. Keep the heel down and the toes aimed forward.",
@@ -576,7 +576,7 @@ export const PRESETS: Preset[] = [
   {
     id: "desk-reset",
     name: "Desk reset",
-    blurb: "Chair only. Neck, shoulders, hips, and a hamstring hinge.",
+    blurb: "Just a chair. Loosens your neck, shoulders, and hips.",
     where: "Chair",
     order: [
       "neck",
@@ -591,8 +591,8 @@ export const PRESETS: Preset[] = [
   },
   {
     id: "morning-loosen",
-    name: "Morning loosen",
-    blurb: "A gentle pass through the whole body. Floor, chair, and standing.",
+    name: "Morning wake-up",
+    blurb: "A gentle pass through your whole body. Floor, chair, and standing.",
     where: "Mixed",
     order: [
       "neck",

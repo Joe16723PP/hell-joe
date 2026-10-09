@@ -1,12 +1,12 @@
 "use client";
 
 import { useState, useSyncExternalStore, type FormEvent, type ReactNode } from "react";
-import { BellRing, Check, Clock, Moon, Target } from "lucide-react";
+import { BellRing, Check, Clock, Dumbbell, Moon, Target } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { TIGHT_OPTIONS, type LengthMin, type TightId } from "@/lib/catalog";
 import { useI18n } from "@/lib/i18n/provider";
-import type { Settings } from "@/lib/plan";
+import type { ExerciseMinutes, Settings } from "@/lib/plan";
 import { useStretch } from "@/lib/store";
 import { cn } from "cn";
 
@@ -42,6 +42,8 @@ export function SetupScreen({
   const [restDay, setRestDay] = useState(settings.restDay);
   const [reminderOn, setReminderOn] = useState(settings.reminderOn);
   const [reminderTime, setReminderTime] = useState(settings.reminderTime || "08:00");
+  const [exerciseOn, setExerciseOn] = useState(settings.exerciseOn);
+  const [exerciseLength, setExerciseLength] = useState<ExerciseMinutes>(settings.exerciseLength);
   const [permissionOverride, setPermissionOverride] = useState<
     NotificationPermission | "unsupported" | null
   >(null);
@@ -78,6 +80,10 @@ export function SetupScreen({
       restDay,
       reminderOn,
       reminderTime: reminderTime || "08:00",
+      exerciseOn,
+      exerciseOption: settings.exerciseOption,
+      exerciseLength,
+      exerciseIntroSeen: true,
     };
     saveSetup(next);
     onDone();
@@ -199,6 +205,38 @@ export function SetupScreen({
               className="mt-1 h-12 rounded-xl bg-background text-base"
             />
           </div>
+        </SetupCard>
+
+        <SetupCard
+          icon={<Dumbbell className="size-5" aria-hidden />}
+          title={t("setup.exerciseTitle")}
+          hint={t("setup.exerciseHint")}
+        >
+          <label className="flex items-start gap-3 text-base">
+            <input
+              type="checkbox"
+              checked={exerciseOn}
+              onChange={(event) => setExerciseOn(event.target.checked)}
+              className="mt-1 size-5 shrink-0 accent-[#0e7a67]"
+            />
+            <span>{t("setup.exerciseOn")}</span>
+          </label>
+          {exerciseOn && (
+            <div className="mt-4 grid grid-cols-3 gap-2">
+              {([10, 15, 20] as ExerciseMinutes[]).map((value) => (
+                <button
+                  key={value}
+                  type="button"
+                  aria-pressed={exerciseLength === value}
+                  onClick={() => setExerciseLength(value)}
+                  className={choiceClass(exerciseLength === value)}
+                >
+                  <span className="font-heading text-2xl font-semibold">{value}</span>
+                  <span className="block text-sm opacity-85">{t("setup.minutesUnit")}</span>
+                </button>
+              ))}
+            </div>
+          )}
         </SetupCard>
 
         <p className="px-1 text-sm leading-relaxed text-muted-foreground">{t("common.disclaimer")}</p>

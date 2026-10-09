@@ -20,7 +20,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const { ready, settings } = useStretch();
   useStretchReminder();
   const onMove =
-    pathname.startsWith("/session") || /^\/library\/.+/.test(pathname);
+    pathname.startsWith("/session") ||
+    pathname.startsWith("/exercise") ||
+    /^\/library\/.+/.test(pathname);
   const showNav = ready && settings.setupDone && !onMove;
 
   return (
@@ -112,6 +114,8 @@ function LogoMark() {
 }
 
 function isActive(pathname: string, href: string) {
-  if (href === "/") return pathname === "/" || pathname === "/recap" || pathname === "/session";
+  if (href === "/") {
+    return pathname === "/" || pathname.startsWith("/recap") || pathname === "/session" || pathname === "/exercise";
+  }
   return pathname === href || pathname.startsWith(`${href}/`);
 }

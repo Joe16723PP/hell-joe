@@ -17,6 +17,7 @@ import {
   Shuffle,
   Sparkles,
 } from "lucide-react";
+import { ExerciseCard, ExerciseIntro, RestBrace, doseLine } from "@/components/exercise-home";
 import { StretchFigure } from "@/components/stretch-figure";
 import { SetupScreen } from "@/components/setup-screen";
 import { WeekStrip } from "@/components/week-strip";
@@ -37,6 +38,7 @@ import {
   getStretch,
   holdSecondsForLength,
 } from "@/lib/catalog";
+import { exerciseMoveIds, presetIdFor } from "@/lib/exercise";
 import { useI18n } from "@/lib/i18n/provider";
 import {
   currentStreak,
@@ -81,6 +83,8 @@ export function HomeScreen() {
     );
   }
 
+  if (!settings.exerciseIntroSeen) return <ExerciseIntro />;
+
   return <TodayHome onEditSetup={() => setEditing(true)} />;
 }
 
@@ -106,6 +110,11 @@ function TodayHome({ onEditSetup }: { onEditSetup: () => void }) {
     setPreset,
     startSession,
     startOver,
+    exerciseFamily,
+    exerciseSession,
+    exerciseFinished,
+    setExerciseOn,
+    startExercise,
   } = useStretch();
   const today = startOfToday();
   const todayKey = isoDate(today);
@@ -119,6 +128,14 @@ function TodayHome({ onEditSetup }: { onEditSetup: () => void }) {
   const hero = getStretch(moveIds[0] ?? "hip-flexor");
   const finishedDates = finished.map((entry) => entry.date);
   const streak = currentStreak(finishedDates, settings.restDay, today);
+  const exerciseDates = exerciseFinished.map((entry) => entry.date);
+  const exerciseStreak = currentStreak(exerciseDates, settings.restDay, today);
+  const exerciseInProgress = exerciseSession?.kind === "exercise";
+  const exerciseDone = exerciseDates.includes(todayKey) && !exerciseInProgress;
+  const exercisePresetId = presetIdFor(settings.exerciseOption, exerciseFamily);
+  const exerciseIds = exerciseInProgress
+    ? exerciseSession.moveIds
+    : exerciseMoveIds(exercisePresetId, settings.exerciseLength);
   const hasFinished = finished.length > 0;
   const doneToday = finishedDates.includes(todayKey) && !inProgress;
   const weekAreas = recentAreas(finished, today);
@@ -137,6 +154,19 @@ function TodayHome({ onEditSetup }: { onEditSetup: () => void }) {
     router.push("/session");
   }
 
+  function beginExercise(kind: "exercise" | "brace" = "exercise") {
+    if (kind === "exercise" && exerciseDone) {
+      router.push("/recap/exercise");
+      return;
+    }
+    if (exerciseSession?.kind === kind) {
+      router.push("/exercise");
+      return;
+    }
+    startExercise(kind);
+    router.push("/exercise");
+  }
+
   return (
     <main className="mx-auto w-full max-w-6xl px-4 py-6 md:px-8 md:py-10">
       <div className="flex flex-wrap items-end justify-between gap-3">
@@ -146,20 +176,36 @@ function TodayHome({ onEditSetup }: { onEditSetup: () => void }) {
             {t(greetingKey(new Date().getHours()))}
           </p>
         </div>
-        <StreakPill streak={streak} />
+        <div className="flex flex-wrap gap-2">
+          <StreakPill label={t("home.streak")} value={i18n.days(streak)} lit={streak > 0} />
+          {settings.exerciseOn && (
+            <StreakPill
+              label={t("home.exerciseStreak")}
+              value={i18n.days(exerciseStreak)}
+              lit={exerciseStreak > 0}
+            />
+          )}
+        </div>
       </div>
 
       {showRest ? (
-        <RestHome
-          preview={restPreview}
-          restName={i18n.weekday(settings.restDay)}
-          nextLabel={`${i18n.weekday(nextStretch.getDay())} · ${i18n.focus(nextFocus.key)}`}
-          streak={streak}
-          hasFinished={hasFinished}
-          loosenActive={session?.kind === "loosen"}
-          onStart={() => begin("loosen")}
-          onBack={restPreview ? () => setViewingRest(false) : undefined}
-        />
+        <>
+          <RestHome
+            preview={restPreview}
+            restName={i18n.weekday(settings.restDay)}
+            nextLabel={`${i18n.weekday(nextStretch.getDay())} · ${i18n.focus(nextFocus.key)}`}
+            streak={streak}
+            hasFinished={hasFinished}
+            loosenActive={session?.kind === "loosen"}
+            onStart={() => begin("loosen")}
+            onBack={restPreview ? () => setViewingRest(false) : undefined}
+          />
+          {settings.exerciseOn && (
+            <div className="mt-6">
+              <RestBrace active={exerciseSession?.kind === "brace"} onStart={() => beginExercise("brace")} />
+            </div>
+          )}
+        </>
       ) : (
         <>
           <section className="relative mt-5 overflow-hidden rounded-[2rem] hero-gradient text-white shadow-xl shadow-primary/20">
@@ -232,7 +278,31 @@ function TodayHome({ onEditSetup }: { onEditSetup: () => void }) {
                       {t("home.startOver")}
                     </Button>
                   )}
+                  {settings.exerciseOn && (
+                    <Button
+                      type="button"
+                      size="lg"
+                      variant="outline"
+                      onClick={() => beginExercise("exercise")}
+                      className="h-14 rounded-2xl border-white/40 bg-white/10 px-7 text-lg font-semibold whitespace-normal text-white hover:bg-white/20 hover:text-white"
+                    >
+                      <Play className="size-5 fill-current" aria-hidden />
+                      {exerciseInProgress
+                        ? t("home.exerciseResume", {
+                            current: exerciseSession.index + 1,
+                            total: exerciseSession.moveIds.length,
+                          })
+                        : exerciseDone
+                          ? t("home.exerciseDone")
+                          : t("home.exerciseStart")}
+                    </Button>
+                  )}
                 </div>
+                {settings.exerciseOn && !exerciseDone && !exerciseInProgress && (
+                  <p className="mt-3 text-sm text-white/85">
+                    {doseLine(t, settings.exerciseOption, settings.exerciseLength, exerciseIds)}
+                  </p>
+                )}
                 <button
                   type="button"
                   onClick={() => setViewingRest(true)}
@@ -256,6 +326,12 @@ function TodayHome({ onEditSetup }: { onEditSetup: () => void }) {
               </figure>
             </div>
           </section>
+
+          {settings.exerciseOn && (
+            <div className="mt-6">
+              <ExerciseCard family={exerciseFamily} session={exerciseInProgress ? exerciseSession : null} doneToday={exerciseDone} />
+            </div>
+          )}
 
           <div className="mt-6 grid items-start gap-6 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
             <section className="rounded-3xl border border-border bg-card p-4 shadow-sm sm:p-6">
@@ -368,6 +444,7 @@ function TodayHome({ onEditSetup }: { onEditSetup: () => void }) {
             restDay={settings.restDay}
             tightAreas={settings.tightAreas}
             finishedDates={finishedDates}
+            exerciseDates={exerciseDates}
             selected={showRest ? "rest" : "today"}
             onSelectToday={() => setViewingRest(false)}
             onSelectRest={() => setViewingRest(true)}
@@ -427,10 +504,17 @@ function TodayHome({ onEditSetup }: { onEditSetup: () => void }) {
 
       <div className="mt-8 flex flex-col gap-3 border-t border-border pt-6 sm:flex-row sm:items-center sm:justify-between">
         <p className="max-w-xl text-sm leading-relaxed text-muted-foreground">{t("common.disclaimer")}</p>
-        <Button type="button" variant="outline" onClick={onEditSetup} className="rounded-full">
-          <Settings2 className="size-4" aria-hidden />
-          {t("home.editSetup")}
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          {!settings.exerciseOn && (
+            <Button type="button" variant="outline" onClick={() => setExerciseOn(true)} className="rounded-full">
+              {t("home.exerciseShow")}
+            </Button>
+          )}
+          <Button type="button" variant="outline" onClick={onEditSetup} className="rounded-full">
+            <Settings2 className="size-4" aria-hidden />
+            {t("home.editSetup")}
+          </Button>
+        </div>
       </div>
     </main>
   );
@@ -445,9 +529,7 @@ function HeroChip({ icon, children }: { icon?: React.ReactNode; children: React.
   );
 }
 
-function StreakPill({ streak }: { streak: number }) {
-  const i18n = useI18n();
-  const lit = streak > 0;
+function StreakPill({ label, value, lit }: { label: string; value: string; lit: boolean }) {
   return (
     <div
       className={cn(
@@ -457,7 +539,7 @@ function StreakPill({ streak }: { streak: number }) {
     >
       <Flame className={cn("size-5", lit && "fill-coral text-coral")} aria-hidden />
       <span className="text-sm font-semibold">
-        {i18n.t("home.streak")} · {i18n.days(streak)}
+        {label} {value}
       </span>
     </div>
   );

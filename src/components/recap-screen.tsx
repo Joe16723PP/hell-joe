@@ -5,9 +5,11 @@ import { ArrowRight, Check, Flame, Layers, Moon, SkipForward, Sunrise } from "lu
 import { StretchFigure } from "@/components/stretch-figure";
 import { WeekStrip } from "@/components/week-strip";
 import { buttonVariants } from "@/components/ui/button";
+import { ExerciseFigure } from "@/components/stretch-figure";
 import { getStretch } from "@/lib/catalog";
+import { suggestedFamily } from "@/lib/exercise";
 import { useI18n } from "@/lib/i18n/provider";
-import { addDays, focusFor, startOfToday } from "@/lib/plan";
+import { addDays, focusFor, isoDate, startOfToday } from "@/lib/plan";
 import { useStretch } from "@/lib/store";
 import { cn } from "cn";
 
@@ -23,7 +25,7 @@ const CONFETTI = [
 export function RecapScreen() {
   const i18n = useI18n();
   const { t } = i18n;
-  const { ready, recap, settings, finished } = useStretch();
+  const { ready, recap, settings, finished, exerciseFinished } = useStretch();
 
   if (!ready) {
     return (
@@ -94,6 +96,12 @@ export function RecapScreen() {
         <p className="relative mx-auto mt-3 max-w-md text-lg leading-relaxed text-white/85">
           {loosen ? t("recap.loosenBody") : recap.counted ? t("recap.countedBody") : t("recap.noHolds")}
         </p>
+        {settings.exerciseOn &&
+          !loosen &&
+          !focusFor(today, settings).rest &&
+          !exerciseFinished.some((entry) => entry.date === isoDate(today)) && (
+            <p className="relative mx-auto mt-2 max-w-md text-sm text-white/80">{t("recap.exerciseWaiting")}</p>
+          )}
       </section>
 
       <div className="mt-4 grid grid-cols-3 gap-3">
@@ -157,6 +165,7 @@ export function RecapScreen() {
           restDay={settings.restDay}
           tightAreas={settings.tightAreas}
           finishedDates={finished.map((entry) => entry.date)}
+          exerciseDates={exerciseFinished.map((entry) => entry.date)}
           selected={focusFor(today, settings).rest ? "rest" : "today"}
         />
       </div>
@@ -181,6 +190,109 @@ export function RecapScreen() {
         <Link href="/" className={cn(buttonVariants({ size: "lg" }), "h-12 rounded-2xl px-6 font-semibold")}>
           {t("common.backToToday")}
           <ArrowRight className="size-4" aria-hidden />
+        </Link>
+      </div>
+    </main>
+  );
+}
+
+export function ExerciseRecapScreen() {
+  const i18n = useI18n();
+  const { t } = i18n;
+  const { ready, exerciseRecap, settings, finished, exerciseFinished } = useStretch();
+
+  if (!ready) {
+    return (
+      <main className="mx-auto max-w-3xl px-4 py-10" aria-busy>
+        <p className="sr-only">{t("recap.loading")}</p>
+      </main>
+    );
+  }
+
+  if (!exerciseRecap) {
+    return (
+      <main className="mx-auto max-w-xl px-4 py-16 text-center">
+        <h1 className="text-4xl font-semibold">{t("home.exerciseEmpty")}</h1>
+        <Link href="/" className={cn(buttonVariants({ size: "lg" }), "mt-6 inline-flex h-12 rounded-2xl px-6")}>
+          {t("common.backToToday")}
+        </Link>
+      </main>
+    );
+  }
+
+  const today = startOfToday();
+  const brace = exerciseRecap.kind === "brace";
+  const tomorrow = addDays(today, 1);
+  const restTomorrow = tomorrow.getDay() === settings.restDay;
+  const nextFamily = suggestedFamily(tomorrow, settings.restDay);
+  const stretchDone = finished.some((entry) => entry.date === isoDate(today));
+
+  return (
+    <main className="mx-auto w-full max-w-3xl px-4 py-6 md:px-8 md:py-10">
+      <section className="hero-gradient rounded-[2rem] p-6 text-center text-white shadow-xl sm:p-10">
+        <p className="text-sm font-semibold tracking-wide text-white/80 uppercase">
+          {brace ? t("rest.braceTitle") : t("recap.exerciseKicker")}
+        </p>
+        <h1 className="mt-2 text-4xl font-semibold sm:text-5xl">
+          {brace ? t("recap.braceTitle") : t("recap.exerciseTitle")}
+        </h1>
+        <p className="mx-auto mt-3 max-w-md text-lg text-white/85">
+          {brace
+            ? t("recap.braceBody")
+            : exerciseRecap.counted
+              ? t("recap.exerciseCounted")
+              : t("recap.exerciseNone")}
+        </p>
+        <p className="mt-2 text-sm text-white/80">
+          {t(exerciseRecap.option === "core" ? "exercise.optionCore" : "exercise.optionMuscle")}
+          {stretchDone ? ` · ${t("recap.stretchDone")}` : settings.exerciseOn ? ` · ${t("recap.stretchWaiting")}` : ""}
+        </p>
+      </section>
+      <div className="mt-4 grid grid-cols-3 gap-3">
+        <Stat icon={<Layers className="size-5" aria-hidden />} label={t("recap.statMoves")} value={String(exerciseRecap.completed.length)} />
+        <Stat icon={<SkipForward className="size-5" aria-hidden />} label={t("recap.statSkipped")} value={String(exerciseRecap.skipped.length)} />
+        <Stat icon={<Flame className="size-5 fill-coral text-coral" aria-hidden />} label={t("home.exerciseStreak")} value={i18n.days(exerciseRecap.streak)} highlight />
+      </div>
+      <section className="mt-4 rounded-3xl border border-border bg-card p-5 shadow-sm">
+        <h2 className="text-xl font-semibold">{t("recap.patterns")}</h2>
+        {exerciseRecap.patterns.length > 0 ? (
+          <ul className="mt-3 flex flex-wrap gap-2">
+            {exerciseRecap.patterns.map((pattern) => (
+              <li key={pattern} className="rounded-full bg-secondary px-4 py-2 font-semibold text-secondary-foreground">
+                {t(`pattern.${pattern}` as "pattern.front")}
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="mt-2 text-muted-foreground">{t("recap.noPatterns")}</p>
+        )}
+        <ul className="mt-4 grid gap-2 sm:grid-cols-2">
+          {exerciseRecap.completed.map((move) => (
+            <li key={move.id} className="flex items-center gap-3 rounded-2xl bg-muted/60 p-2">
+              <div className="w-12 shrink-0 overflow-hidden rounded-xl stage">
+                <ExerciseFigure id={move.id} sizes="96px" />
+              </div>
+              <p className="truncate font-semibold">{move.name}</p>
+            </li>
+          ))}
+        </ul>
+      </section>
+      <div className="mt-4 rounded-3xl border border-border bg-card p-4 shadow-sm sm:p-6">
+        <WeekStrip
+          today={today}
+          restDay={settings.restDay}
+          tightAreas={settings.tightAreas}
+          finishedDates={finished.map((entry) => entry.date)}
+          exerciseDates={exerciseFinished.map((entry) => entry.date)}
+          selected="today"
+        />
+      </div>
+      <div className="mt-4 flex items-center justify-between gap-3 rounded-3xl bg-accent p-5">
+        <p className="font-heading text-lg font-semibold">
+          {restTomorrow ? t("recap.tomorrowRest") : t("recap.tomorrowFocus", { focus: t(`pattern.${nextFamily}` as "pattern.front"), minutes: i18n.minutes(settings.exerciseLength) })}
+        </p>
+        <Link href="/" className={cn(buttonVariants({ size: "lg" }), "h-12 rounded-2xl px-6")}>
+          {t("common.backToToday")}
         </Link>
       </div>
     </main>

@@ -8,6 +8,10 @@ import {
   movesForLength,
 } from "@/lib/catalog";
 
+export type ExerciseChoice = "core" | "muscle";
+export type ExerciseMinutes = 10 | 15 | 20;
+export type ExerciseFamily = "front" | "side" | "all-fours" | "bridge";
+
 export type Settings = {
   setupDone: boolean;
   length: LengthMin;
@@ -15,6 +19,10 @@ export type Settings = {
   restDay: number;
   reminderOn: boolean;
   reminderTime: string;
+  exerciseOn: boolean;
+  exerciseOption: ExerciseChoice;
+  exerciseLength: ExerciseMinutes;
+  exerciseIntroSeen: boolean;
 };
 
 export type FocusKey = "neck-shoulders" | "hips" | "back" | "legs" | "full-body" | "rest";

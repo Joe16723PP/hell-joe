@@ -10,6 +10,7 @@ export function WeekStrip({
   restDay,
   tightAreas,
   finishedDates,
+  exerciseDates = [],
   selected,
   onSelectToday,
   onSelectRest,
@@ -18,6 +19,7 @@ export function WeekStrip({
   restDay: number;
   tightAreas: Settings["tightAreas"];
   finishedDates: string[];
+  exerciseDates?: string[];
   selected: "today" | "rest";
   onSelectToday?: () => void;
   onSelectRest?: () => void;
@@ -41,6 +43,7 @@ export function WeekStrip({
           const isToday = key === todayKey;
           const isRest = date.getDay() === restDay;
           const done = finishedDates.includes(key);
+          const exercised = exerciseDates.includes(key);
           const past = key < todayKey;
           const pressed = isRest ? selected === "rest" : isToday && selected === "today";
           const focus = focusFor(date, { restDay, tightAreas });
@@ -49,6 +52,7 @@ export function WeekStrip({
             isToday && t("week.today"),
             isRest && t("week.rest"),
             done && t("week.finished"),
+            exercised && t("week.exercise"),
           ]
             .filter(Boolean)
             .join(", ");
@@ -83,6 +87,9 @@ export function WeekStrip({
               <span className="hidden max-w-full truncate text-[0.7rem] text-muted-foreground sm:block">
                 {i18n.focusShort(focus.key)}
               </span>
+              {exercised && (
+                <span className="size-1.5 rounded-full bg-coral" title={t("week.exercise")} />
+              )}
             </>
           );
           if (interactive && (isToday || isRest)) {

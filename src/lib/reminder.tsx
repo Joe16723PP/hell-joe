@@ -26,7 +26,7 @@ export function useStretchReminder() {
       const key = isoDate(today);
       if (lastReminder === key) return;
       try {
-        new Notification("Stretchday", {
+        new Notification(t("app.name"), {
           body: t("reminder.body", { minutes: minutes(settings.length) }),
         });
       } catch {
