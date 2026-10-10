@@ -128,6 +128,8 @@ export const en = {
   "setup.restHint": "No reminders that day, and your streak stays safe.",
   "setup.reminderTitle": "Reminder",
   "setup.reminderLabel": "Send me a reminder on stretch days",
+  "setup.reminderNeedsOpen":
+    "The reminder only arrives while this page, or the installed app, is open. If you open it later the same day, the reminder still shows here.",
   "setup.blocked": "Notifications are off in this browser. Just open the app when you're ready.",
   "setup.unsupported": "Notifications are off in this browser. Just open the app when you're ready.",
   "setup.time": "Time",
@@ -273,7 +275,13 @@ export const en = {
   "recap.tomorrowRest": "Rest day.",
   "recap.tomorrowFocus": "{focus}, about {minutes}.",
 
+  "error.title": "Something went wrong",
+  "error.body": "This screen hit a problem. Try it again, or start over from today.",
+  "error.tryAgain": "Try again",
+  "error.startOver": "Start over",
   "reminder.body": "Time for a quick stretch, about {minutes}.",
+  "reminder.bodyWithExercise":
+    "Time for a quick stretch, about {minutes}, and today's exercise is waiting too.",
 
   "home.exerciseKicker": "Today’s exercise",
   "home.exerciseStart": "Start today’s exercise",
@@ -492,6 +500,8 @@ export const th: Record<BaseKey, string> = {
   "setup.restHint": "วันนั้นไม่มีการเตือน และวันต่อเนื่องไม่ขาด",
   "setup.reminderTitle": "การแจ้งเตือน",
   "setup.reminderLabel": "เตือนฉันในวันที่ต้องยืด",
+  "setup.reminderNeedsOpen":
+    "การแจ้งเตือนจะมาถึงเมื่อเปิดหน้านี้หรือแอปที่ติดตั้งไว้เท่านั้น ถ้าเปิดทีหลังในวันเดียวกัน การแจ้งเตือนจะยังแสดงที่นี่",
   "setup.blocked": "เบราว์เซอร์นี้ปิดการแจ้งเตือนไว้ เปิดแอปเมื่อพร้อมได้เลย",
   "setup.unsupported": "เบราว์เซอร์นี้ปิดการแจ้งเตือนไว้ เปิดแอปเมื่อพร้อมได้เลย",
   "setup.time": "เวลา",
@@ -636,7 +646,12 @@ export const th: Record<BaseKey, string> = {
   "recap.tomorrowRest": "วันพัก",
   "recap.tomorrowFocus": "เน้น{focus} ประมาณ {minutes}",
 
+  "error.title": "มีบางอย่างผิดพลาด",
+  "error.body": "หน้านี้เจอปัญหา ลองอีกครั้ง หรือเริ่มใหม่จากวันนี้",
+  "error.tryAgain": "ลองอีกครั้ง",
+  "error.startOver": "เริ่มใหม่",
   "reminder.body": "ได้เวลายืดแล้ว ใช้เวลาแค่ {minutes}",
+  "reminder.bodyWithExercise": "ได้เวลายืดแล้ว ใช้เวลาแค่ {minutes} และท่าออกกำลังกายของวันนี้ก็รออยู่",
 
   "home.exerciseKicker": "ออกกำลังวันนี้",
   "home.exerciseStart": "เริ่มออกกำลังวันนี้",

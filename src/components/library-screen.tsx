@@ -16,7 +16,7 @@ import {
 import type { ExerciseChoice } from "@/lib/plan";
 import { useI18n } from "@/lib/i18n/provider";
 import { useStretch } from "@/lib/store";
-import { cn } from "cn";
+import { cn } from "@/lib/utils";
 
 export function LibraryScreen() {
   const i18n = useI18n();

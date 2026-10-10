@@ -7,11 +7,12 @@ import { WeekStrip } from "@/components/week-strip";
 import { buttonVariants } from "@/components/ui/button";
 import { ExerciseFigure } from "@/components/stretch-figure";
 import { getStretch } from "@/lib/catalog";
-import { suggestedFamily } from "@/lib/exercise";
+import { getExercise, suggestedFamily } from "@/lib/exercise";
+import { EXERCISES_TH } from "@/lib/i18n/exercise-th";
 import { useI18n } from "@/lib/i18n/provider";
 import { addDays, focusFor, isoDate, startOfToday } from "@/lib/plan";
 import { useStretch } from "@/lib/store";
-import { cn } from "cn";
+import { cn } from "@/lib/utils";
 
 const CONFETTI = [
   { left: "8%", top: "18%", color: "bg-sun", size: "size-3", rotate: "rotate-12" },
@@ -272,7 +273,7 @@ export function ExerciseRecapScreen() {
               <div className="w-12 shrink-0 overflow-hidden rounded-xl stage">
                 <ExerciseFigure id={move.id} sizes="96px" />
               </div>
-              <p className="truncate font-semibold">{move.name}</p>
+              <p className="truncate font-semibold">{exerciseName(i18n.locale, move)}</p>
             </li>
           ))}
         </ul>
@@ -297,6 +298,12 @@ export function ExerciseRecapScreen() {
       </div>
     </main>
   );
+}
+
+/** The Thai name when the catalog has one, otherwise the name saved with the recap. */
+function exerciseName(locale: string, move: { id: string; name: string }) {
+  if (locale !== "th" || !getExercise(move.id)) return move.name;
+  return EXERCISES_TH[move.id as keyof typeof EXERCISES_TH]?.name ?? move.name;
 }
 
 function Stat({

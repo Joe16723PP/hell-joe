@@ -1,42 +1,59 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useI18n } from "@/lib/i18n/provider";
 import { focusFor, isoDate, startOfToday } from "@/lib/plan";
+import { reminderDue } from "@/lib/reminder-time";
 import { useStretch } from "@/lib/store";
 
 export function useStretchReminder() {
-  const { ready, settings, lastReminder, markReminded } = useStretch();
+  const { ready, settings, lastReminder, finished, exerciseFinished, markReminded } = useStretch();
   const { t, minutes } = useI18n();
+  const [notice, setNotice] = useState<string | null>(null);
 
   useEffect(() => {
     if (!ready || !settings.setupDone || !settings.reminderOn) return;
-    if (typeof Notification === "undefined") return;
 
     const tick = () => {
-      if (Notification.permission !== "granted") return;
-      const now = new Date();
       const today = startOfToday();
-      if (focusFor(today, settings).rest) return;
-      const [hourText, minuteText] = settings.reminderTime.split(":");
-      const hour = Number(hourText);
-      const minute = Number(minuteText);
-      if (!Number.isFinite(hour) || !Number.isFinite(minute)) return;
-      if (now.getHours() !== hour || now.getMinutes() !== minute) return;
-      const key = isoDate(today);
-      if (lastReminder === key) return;
-      try {
-        new Notification(t("app.name"), {
-          body: t("reminder.body", { minutes: minutes(settings.length) }),
-        });
-      } catch {
-        return;
+      const due = reminderDue({
+        now: new Date(),
+        today,
+        rest: focusFor(today, settings).rest,
+        reminderOn: settings.reminderOn,
+        reminderTime: settings.reminderTime,
+        lastReminder,
+        stretchDone: finished.some((entry) => entry.date === isoDate(today)),
+        exerciseOn: settings.exerciseOn,
+        exerciseDone: exerciseFinished.some((entry) => entry.date === isoDate(today)),
+      });
+      if (!due) return;
+
+      const body = t(due.exercise ? "reminder.bodyWithExercise" : "reminder.body", {
+        minutes: minutes(settings.length),
+      });
+      if (typeof Notification !== "undefined" && Notification.permission === "granted") {
+        try {
+          new Notification(t("app.name"), { body });
+        } catch {
+          // The page can still show the reminder itself.
+        }
       }
-      markReminded(key);
+      setNotice(body);
+      markReminded(due.date);
     };
 
     tick();
     const id = window.setInterval(tick, 15000);
-    return () => window.clearInterval(id);
-  }, [lastReminder, markReminded, minutes, ready, settings, t]);
+    const onVisible = () => {
+      if (document.visibilityState === "visible") tick();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      window.clearInterval(id);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, [exerciseFinished, finished, lastReminder, markReminded, minutes, ready, settings, t]);
+
+  return notice;
 }

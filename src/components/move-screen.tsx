@@ -34,16 +34,13 @@ import {
   type StretchId,
   getStretch,
 } from "@/lib/catalog";
+import { useCountdown } from "@/lib/countdown";
 import { playHoldTick, primeHoldTick, shouldPlayHoldTick } from "@/lib/hold-tick";
 import { useI18n } from "@/lib/i18n/provider";
-import {
-  POSE_PAUSE_SECONDS,
-  poseIsComplete,
-  shouldPauseForNextPose,
-  stepPosePause,
-} from "@/lib/pose-pause";
+import { POSE_PAUSE_SECONDS, poseIsComplete, shouldPauseForNextPose } from "@/lib/pose-pause";
 import { useStretch, type Side } from "@/lib/store";
-import { cn } from "cn";
+import { useWakeLock } from "@/lib/wake-lock";
+import { cn } from "@/lib/utils";
 
 export function SessionMove() {
   const router = useRouter();
@@ -357,8 +354,8 @@ function MoveView({
           <SideStatus stretch={stretch} side={side} sides={sides} onSetSide={onSetSide} />
 
           <HoldControls
+            key={`${stretch.id}-${side}`}
             seconds={seconds}
-            resetKey={`${stretch.id}-${side}`}
             sideDone={sideDone}
             bothDone={bothDone}
             needsOther={needsOther}
@@ -490,7 +487,6 @@ function HoldRing({
 
 function HoldControls({
   seconds,
-  resetKey,
   sideDone,
   bothDone,
   needsOther,
@@ -503,7 +499,6 @@ function HoldControls({
   frozen,
 }: {
   seconds: number;
-  resetKey: string;
   sideDone: boolean;
   bothDone: boolean;
   needsOther: boolean;
@@ -516,157 +511,54 @@ function HoldControls({
   frozen: boolean;
 }) {
   const { t } = useI18n();
-  const [remaining, setRemaining] = useState(seconds);
   const [total, setTotal] = useState(seconds);
-  const [running, setRunning] = useState(false);
-  const [timerKey, setTimerKey] = useState(resetKey);
-  const doneRef = useRef(false);
-  const remainingRef = useRef(remaining);
-  const onNextRef = useRef(onNext);
   const advancedRef = useRef(false);
-  const pauseIntervalRef = useRef<number | null>(null);
-  const pauseLeftRef = useRef<number | null>(null);
-  const canAdvance = onNext !== null;
-  const pausing = shouldPauseForNextPose({ poseComplete: bothDone, canAdvance });
-  const pauseToken = pausing ? resetKey : "";
-  const [pauseTokenState, setPauseTokenState] = useState(pauseToken);
-  const [pauseLeft, setPauseLeft] = useState<number | null>(pausing ? POSE_PAUSE_SECONDS : null);
+  const pausing = shouldPauseForNextPose({ poseComplete: bothDone, canAdvance: onNext !== null });
 
-  if (pauseTokenState !== pauseToken) {
-    setPauseTokenState(pauseToken);
-    setPauseLeft(pausing ? POSE_PAUSE_SECONDS : null);
-  }
-
-  if (timerKey !== resetKey) {
-    setTimerKey(resetKey);
-    setRemaining(seconds);
-    setTotal(seconds);
-    setRunning(false);
-  }
-
-  useEffect(() => {
-    doneRef.current = false;
-    advancedRef.current = false;
-  }, [resetKey]);
-
-  useEffect(() => {
-    onNextRef.current = onNext;
-  }, [onNext]);
-
-  useEffect(() => {
-    pauseLeftRef.current = pauseLeft;
-  }, [pauseLeft]);
-
-  useEffect(() => {
-    if (!pausing || frozen) return;
-    let left = pauseLeftRef.current ?? POSE_PAUSE_SECONDS;
-    let cancelled = false;
-    const id = window.setInterval(() => {
-      if (cancelled) return;
-      const step = stepPosePause(left);
-      left = step.secondsLeft;
-      setPauseLeft(left);
-      if (!step.advance) return;
-      window.clearInterval(id);
-      if (pauseIntervalRef.current === id) pauseIntervalRef.current = null;
-      if (advancedRef.current) return;
-      advancedRef.current = true;
-      onNextRef.current?.();
-    }, 1000);
-    pauseIntervalRef.current = id;
-    return () => {
-      cancelled = true;
-      window.clearInterval(id);
-      if (pauseIntervalRef.current === id) pauseIntervalRef.current = null;
-    };
-  }, [frozen, pausing, resetKey]);
-
-  useEffect(() => {
-    remainingRef.current = remaining;
-  }, [remaining]);
+  const hold = useCountdown(seconds, {
+    paused: frozen,
+    onSecond: (_, previous) => {
+      if (shouldPlayHoldTick({ running: true, audible: tick, remaining: previous, starting: false })) {
+        playHoldTick();
+      }
+    },
+    onDone: onCompleteHold,
+  });
+  const pause = useCountdown(POSE_PAUSE_SECONDS, {
+    paused: frozen,
+    autoStart: pausing,
+    onDone: () => goNext(),
+  });
+  useWakeLock(hold.active || pause.active);
+  const remaining = hold.remaining;
+  const running = hold.running;
 
   useEffect(() => {
     if (!tick) return;
     primeHoldTick();
   }, [tick]);
 
-  useEffect(() => {
-    if (!running || !tick || frozen) return;
-    const id = window.setInterval(() => {
-      if (
-        shouldPlayHoldTick({
-          running: true,
-          audible: tick,
-          remaining: remainingRef.current,
-          starting: false,
-        })
-      ) {
-        playHoldTick();
-      }
-    }, 1000);
-    return () => window.clearInterval(id);
-  }, [frozen, running, tick]);
-
-  useEffect(() => {
-    if (!running || frozen) return;
-    const id = window.setInterval(() => {
-      setRemaining((current) => {
-        if (current <= 1) {
-          window.setTimeout(() => {
-            setRunning(false);
-            if (!doneRef.current) {
-              doneRef.current = true;
-              onCompleteHold();
-            }
-          }, 0);
-          return 0;
-        }
-        return current - 1;
-      });
-    }, 1000);
-    return () => window.clearInterval(id);
-  }, [frozen, onCompleteHold, running]);
-
-  function finishEarly() {
-    setRunning(false);
-    setRemaining(0);
-    if (!doneRef.current) {
-      doneRef.current = true;
-      onCompleteHold();
-    }
-  }
-
   function startHold() {
-    if (
-      shouldPlayHoldTick({
-        running: true,
-        audible: tick,
-        remaining,
-        starting: true,
-      })
-    ) {
+    if (shouldPlayHoldTick({ running: true, audible: tick, remaining, starting: true })) {
       playHoldTick();
     }
-    setRunning(true);
+    hold.start();
   }
 
   function addFifteen() {
     const next = Math.min(90, remaining + 15);
-    setRemaining((current) => Math.min(90, current + 15));
+    hold.add(15, 90);
     setTotal((current) => Math.max(current, next));
   }
 
   function goNext() {
     if (!onNext || advancedRef.current) return;
     advancedRef.current = true;
-    if (pauseIntervalRef.current !== null) {
-      window.clearInterval(pauseIntervalRef.current);
-      pauseIntervalRef.current = null;
-    }
+    pause.stop();
     onNext();
   }
 
-  const pauseShown = pausing ? (pauseLeft ?? POSE_PAUSE_SECONDS) : null;
+  const pauseShown = pausing ? pause.remaining : null;
   const tone = pauseShown !== null ? "coral" : sideDone ? "done" : "primary";
   const ringValue = pauseShown !== null ? pauseShown : remaining;
   const ringTotal = pauseShown !== null ? POSE_PAUSE_SECONDS : total;
@@ -682,7 +574,7 @@ function HoldControls({
         </Button>
       )}
       {running && (
-        <Button type="button" size="lg" className="h-12 rounded-2xl px-5 font-semibold" onClick={finishEarly}>
+        <Button type="button" size="lg" className="h-12 rounded-2xl px-5 font-semibold" onClick={hold.finish}>
           <Check className="size-4" strokeWidth={3} aria-hidden />
           {t("move.finishEarly")}
         </Button>
@@ -722,8 +614,9 @@ function HoldControls({
     <>
       <div className="mt-5 hidden items-center gap-6 rounded-3xl border border-border bg-card p-5 shadow-sm md:flex">
         <HoldRing value={ringValue} total={ringTotal} size={148} tone={tone}>
-          <div aria-live="polite">
-            <p className="font-heading text-4xl font-semibold tabular-nums">
+          <div>
+            <CountdownStatus text={spokenHold(pauseShown, remaining)} />
+            <p className="font-heading text-4xl font-semibold tabular-nums" aria-hidden>
               {pauseShown !== null ? pauseShown : formatHold(remaining)}
             </p>
             <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
@@ -864,6 +757,20 @@ function SkipDialog({
         </div>
       </DialogContent>
     </Dialog>
+  );
+}
+
+/** Spoken every 10 seconds and at the end, so a screen reader is not interrupted each second. */
+function spokenHold(pauseShown: number | null, remaining: number) {
+  const value = pauseShown !== null ? pauseShown : remaining;
+  return value % 10 === 0 ? String(value) : null;
+}
+
+function CountdownStatus({ text }: { text: string | null }) {
+  return (
+    <span className="sr-only" aria-live="polite">
+      {text ?? ""}
+    </span>
   );
 }
 

@@ -15,8 +15,3 @@ export function shouldPauseForNextPose(input: {
 }): boolean {
   return input.poseComplete && input.canAdvance;
 }
-
-export function stepPosePause(secondsLeft: number): { secondsLeft: number; advance: boolean } {
-  if (secondsLeft <= 1) return { secondsLeft: 1, advance: true };
-  return { secondsLeft: secondsLeft - 1, advance: false };
-}

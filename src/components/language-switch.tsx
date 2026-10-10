@@ -3,7 +3,7 @@
 import { Languages } from "lucide-react";
 import { useI18n } from "@/lib/i18n/provider";
 import { LOCALES } from "@/lib/i18n/messages";
-import { cn } from "cn";
+import { cn } from "@/lib/utils";
 
 export function LanguageSwitch() {
   const { locale, setLocale, t } = useI18n();

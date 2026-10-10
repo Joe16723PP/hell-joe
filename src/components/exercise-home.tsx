@@ -30,7 +30,7 @@ import {
   type ExerciseMinutes,
 } from "@/lib/plan";
 import { useStretch, type ExerciseSession } from "@/lib/store";
-import { cn } from "cn";
+import { cn } from "@/lib/utils";
 
 const FAMILIES: ExerciseFamily[] = ["front", "side", "all-fours", "bridge"];
 const LENGTHS: ExerciseMinutes[] = [10, 15, 20];

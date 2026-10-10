@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeftRight, Check, Flag, HeartPulse, Play, Plus, ScanEye, SkipForward, X } from "lucide-react";
@@ -24,12 +24,14 @@ import {
   type ExerciseMove,
   type ExerciseSessionState,
 } from "@/lib/exercise";
+import { useCountdown } from "@/lib/countdown";
 import { splitMistake } from "@/lib/form-cues";
 import { playHoldTick, primeHoldTick, shouldPlayHoldTick } from "@/lib/hold-tick";
 import { useI18n } from "@/lib/i18n/provider";
 import { POSE_PAUSE_SECONDS } from "@/lib/pose-pause";
 import { useStretch, type ExerciseSession } from "@/lib/store";
-import { cn } from "cn";
+import { useWakeLock } from "@/lib/wake-lock";
+import { cn } from "@/lib/utils";
 
 export function ExerciseSessionScreen() {
   const router = useRouter();
@@ -363,60 +365,26 @@ function HoldControls({
   onFinish: () => void;
 }) {
   const { t } = useI18n();
-  const [remaining, setRemaining] = useState(seconds);
-  const [total, setTotal] = useState(seconds);
-  const [running, setRunning] = useState(false);
-  const remainingRef = useRef(remaining);
-  const doneRef = useRef(false);
-
-  useEffect(() => {
-    remainingRef.current = remaining;
-  }, [remaining]);
+  const hold = useCountdown(seconds, {
+    paused: frozen,
+    onSecond: (_, previous) => {
+      if (shouldPlayHoldTick({ running: true, audible: true, remaining: previous, starting: false })) {
+        playHoldTick();
+      }
+    },
+    onDone: onFinish,
+  });
+  useWakeLock(hold.active);
+  const { remaining, running } = hold;
 
   useEffect(() => {
     primeHoldTick();
   }, []);
 
-  useEffect(() => {
-    if (!running || frozen) return;
-    const id = window.setInterval(() => {
-      if (
-        shouldPlayHoldTick({
-          running: true,
-          audible: true,
-          remaining: remainingRef.current,
-          starting: false,
-        })
-      ) {
-        playHoldTick();
-      }
-    }, 1000);
-    return () => window.clearInterval(id);
-  }, [frozen, running]);
-
-  useEffect(() => {
-    if (!running || frozen) return;
-    const id = window.setInterval(() => {
-      setRemaining((current) => {
-        if (current <= 1) {
-          window.setTimeout(() => {
-            setRunning(false);
-            if (!doneRef.current) {
-              doneRef.current = true;
-              onFinish();
-            }
-          }, 0);
-          return 0;
-        }
-        return current - 1;
-      });
-    }, 1000);
-    return () => window.clearInterval(id);
-  }, [frozen, onFinish, running]);
-
   return (
     <div className="flex flex-wrap items-center gap-3 rounded-3xl border border-border bg-card p-4 shadow-sm">
-      <p className="font-heading text-4xl font-semibold tabular-nums">{remaining}</p>
+      <p className="font-heading text-4xl font-semibold tabular-nums" aria-hidden>{remaining}</p>
+      <CountdownStatus text={spokenCountdown(remaining)} />
       {!running ? (
         <Button
           type="button"
@@ -424,25 +392,14 @@ function HoldControls({
           className="h-12 rounded-2xl font-semibold"
           onClick={() => {
             if (shouldPlayHoldTick({ running: true, audible: true, remaining, starting: true })) playHoldTick();
-            setRunning(true);
+            hold.start();
           }}
         >
           <Play className="size-4 fill-current" aria-hidden />
           {t("move.startHold")}
         </Button>
       ) : (
-        <Button
-          type="button"
-          size="lg"
-          className="h-12 rounded-2xl font-semibold"
-          onClick={() => {
-            setRunning(false);
-            if (!doneRef.current) {
-              doneRef.current = true;
-              onFinish();
-            }
-          }}
-        >
+        <Button type="button" size="lg" className="h-12 rounded-2xl font-semibold" onClick={hold.finish}>
           <Check className="size-4" aria-hidden />
           {t("move.finishEarly")}
         </Button>
@@ -453,16 +410,11 @@ function HoldControls({
         variant="outline"
         className="h-12 rounded-2xl font-semibold"
         aria-label={t("move.add15Label")}
-        onClick={() => {
-          const next = Math.min(90, remaining + 15);
-          setRemaining((current) => Math.min(90, current + 15));
-          setTotal((current) => Math.max(current, next));
-        }}
+        onClick={() => hold.add(15, 90)}
       >
         <Plus className="size-4" aria-hidden />
         {t("move.add15")}
       </Button>
-      <span className="sr-only">{total}</span>
     </div>
   );
 }
@@ -479,41 +431,22 @@ function Countdown({
   onDone: () => void;
 }) {
   const { t } = useI18n();
-  const [left, setLeft] = useState(seconds);
-  const leftRef = useRef(left);
-  const doneRef = useRef(false);
-  const onDoneRef = useRef(onDone);
-
-  useEffect(() => {
-    leftRef.current = left;
-  }, [left]);
-
-  useEffect(() => {
-    onDoneRef.current = onDone;
-  }, [onDone]);
-
-  useEffect(() => {
-    if (frozen) return;
-    let current = leftRef.current;
-    const id = window.setInterval(() => {
-      if (doneRef.current) return;
-      if (current <= 1) {
-        doneRef.current = true;
-        window.clearInterval(id);
-        playHoldTick();
-        onDoneRef.current();
-        return;
-      }
-      current -= 1;
-      setLeft(current);
-    }, 1000);
-    return () => window.clearInterval(id);
-  }, [frozen]);
+  const countdown = useCountdown(seconds, {
+    paused: frozen,
+    autoStart: true,
+    onSecond: (remaining) => {
+      if (remaining === 0) playHoldTick();
+    },
+    onDone,
+  });
+  useWakeLock(countdown.active);
+  const left = countdown.remaining;
 
   return (
     <div className="flex flex-wrap items-center gap-3 rounded-3xl border border-border bg-card p-4 shadow-sm">
       <div>
-        <p className="font-heading text-4xl font-semibold tabular-nums text-coral">{left}</p>
+        <p className="font-heading text-4xl font-semibold tabular-nums text-coral" aria-hidden>{left}</p>
+        <CountdownStatus text={spokenCountdown(left)} />
         <p className="text-sm font-semibold text-coral">{label(left)}</p>
       </div>
       <Button
@@ -521,11 +454,7 @@ function Countdown({
         size="lg"
         variant="outline"
         className="h-12 rounded-2xl font-semibold"
-        onClick={() => {
-          if (doneRef.current) return;
-          doneRef.current = true;
-          onDone();
-        }}
+        onClick={countdown.finish}
       >
         <SkipForward className="size-4" aria-hidden />
         {t("exercise.skipRest")}
@@ -652,6 +581,19 @@ function SkipDialog({
         </div>
       </DialogContent>
     </Dialog>
+  );
+}
+
+/** Spoken every 10 seconds and at the end, so a screen reader is not interrupted each second. */
+function spokenCountdown(value: number) {
+  return value % 10 === 0 ? String(value) : null;
+}
+
+function CountdownStatus({ text }: { text: string | null }) {
+  return (
+    <span className="sr-only" aria-live="polite">
+      {text ?? ""}
+    </span>
   );
 }
 

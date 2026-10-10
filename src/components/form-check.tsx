@@ -6,7 +6,7 @@ import { StretchFigure } from "@/components/stretch-figure";
 import type { Stretch } from "@/lib/catalog";
 import { FORM_CUES, splitMistake, type FormCard, type Pt } from "@/lib/form-cues";
 import { useI18n } from "@/lib/i18n/provider";
-import { cn } from "cn";
+import { cn } from "@/lib/utils";
 
 type Tone = "wrong" | "right";
 

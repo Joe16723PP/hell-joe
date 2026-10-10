@@ -53,7 +53,7 @@ import {
   weekProgress,
 } from "@/lib/plan";
 import { useStretch } from "@/lib/store";
-import { cn } from "cn";
+import { cn } from "@/lib/utils";
 
 export function HomeScreen() {
   const { ready, settings } = useStretch();

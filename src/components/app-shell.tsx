@@ -5,9 +5,10 @@ import { usePathname } from "next/navigation";
 import { LibraryBig, Sun } from "lucide-react";
 import { LanguageSwitch } from "@/components/language-switch";
 import { useI18n } from "@/lib/i18n/provider";
+import { useOffline } from "@/lib/offline";
 import { useStretchReminder } from "@/lib/reminder";
 import { useStretch } from "@/lib/store";
-import { cn } from "cn";
+import { cn } from "@/lib/utils";
 
 const LINKS = [
   { href: "/", key: "nav.today", icon: Sun },
@@ -18,7 +19,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { t } = useI18n();
   const { ready, settings } = useStretch();
-  useStretchReminder();
+  const reminder = useStretchReminder();
+  useOffline();
   const onMove =
     pathname.startsWith("/session") ||
     pathname.startsWith("/exercise") ||
@@ -64,6 +66,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </div>
         </div>
       </header>
+      {reminder && (
+        <p
+          role="status"
+          className="mx-auto w-full max-w-6xl px-4 pt-3 text-sm font-medium text-primary md:px-8"
+        >
+          {reminder}
+        </p>
+      )}
       <div className={cn("flex-1", showNav && "pb-24 md:pb-0")}>{children}</div>
       {showNav && (
         <nav

@@ -70,7 +70,8 @@
   --input: #d3e2da;
   --ring: #14a88e;
   --sun: #ffb23f;
-  --coral: #ff7452;
+  /* Dark enough for text on white: #ff7452 measured 2.67:1. */
+  --coral: #c2410c;
   --chart-1: oklch(0.87 0 0);
   --chart-2: oklch(0.556 0 0);
   --chart-3: oklch(0.439 0 0);
@@ -197,7 +198,11 @@
 
 @media (prefers-reduced-motion: reduce) {
   .animate-pop,
-  .animate-breathe {
+  .animate-breathe,
+  .animate-ping,
+  .animate-pulse,
+  .animate-in,
+  .animate-out {
     animation: none;
   }
 }

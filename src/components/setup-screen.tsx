@@ -8,7 +8,7 @@ import { TIGHT_OPTIONS, type LengthMin, type TightId } from "@/lib/catalog";
 import { useI18n } from "@/lib/i18n/provider";
 import type { ExerciseMinutes, Settings } from "@/lib/plan";
 import { useStretch } from "@/lib/store";
-import { cn } from "cn";
+import { cn } from "@/lib/utils";
 
 function subscribePermission() {
   return () => {};
@@ -186,6 +186,9 @@ export function SetupScreen({
             />
             <span>{t("setup.reminderLabel")}</span>
           </label>
+          {reminderOn && (
+            <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{t("setup.reminderNeedsOpen")}</p>
+          )}
           {reminderOn && permission === "denied" && (
             <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{t("setup.blocked")}</p>
           )}

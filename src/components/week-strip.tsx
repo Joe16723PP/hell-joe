@@ -3,7 +3,7 @@
 import { Check, Moon } from "lucide-react";
 import { useI18n } from "@/lib/i18n/provider";
 import { focusFor, isoDate, weekDates, type Settings } from "@/lib/plan";
-import { cn } from "cn";
+import { cn } from "@/lib/utils";
 
 export function WeekStrip({
   today,

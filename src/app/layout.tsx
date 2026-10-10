@@ -29,7 +29,7 @@ const displayTh = Prompt({
 export const metadata: Metadata = {
   title: "TuengWa.dev",
   description:
-    "A few minutes of stretching a day, with clear pictures and tips to get each move right.",
+    "A short daily stretch, plus an optional bodyweight exercise, with still drawings and a hold timer.",
 };
 
 export const viewport: Viewport = {
