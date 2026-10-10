@@ -1,3 +1,7 @@
+import type { BarbellProgress, BarbellRecord } from "@/lib/barbell";
+import { EMPTY_PROGRESS } from "@/lib/barbell";
+import type { BarbellSession } from "@/lib/barbell-session";
+import { parseBarbellProgress, parseBarbellRecords, parseBarbellSession } from "@/lib/barbell-session";
 import type { ExerciseSessionState } from "@/lib/exercise";
 import type { ExerciseChoice, ExerciseFamily, ExerciseMinutes, Settings } from "@/lib/plan";
 import type { StretchRecap, StretchSession } from "@/lib/stretch-session";
@@ -33,6 +37,9 @@ export type SavedData = {
   exerciseSession: ExerciseSessionState | null;
   exerciseFinished: FinishedExercise[];
   exerciseRecap: ExerciseRecap | null;
+  barbellSession: BarbellSession | null;
+  barbellRecords: BarbellRecord[];
+  barbellProgress: BarbellProgress;
 };
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -59,6 +66,9 @@ export const EMPTY_DATA: SavedData = {
   exerciseSession: null,
   exerciseFinished: [],
   exerciseRecap: null,
+  barbellSession: null,
+  barbellRecords: [],
+  barbellProgress: EMPTY_PROGRESS,
 };
 
 const TIGHT = ["neck-shoulders", "back", "hips", "legs"] as const;
@@ -247,6 +257,9 @@ export function parseData(raw: string): SavedData | null {
       exerciseSession: exerciseSession(parsed.exerciseSession),
       exerciseFinished: finishedExercises(parsed.exerciseFinished),
       exerciseRecap: exerciseRecap(parsed.exerciseRecap),
+      barbellSession: parseBarbellSession(parsed.barbellSession),
+      barbellRecords: parseBarbellRecords(parsed.barbellRecords),
+      barbellProgress: parseBarbellProgress(parsed.barbellProgress),
     };
   } catch {
     return null;
@@ -260,8 +273,18 @@ export function dropStaleSessions(data: SavedData, today: string): SavedData {
     data.exerciseSession?.date === today || data.exerciseSession?.status !== "active"
       ? data.exerciseSession
       : null;
-  if (session === data.session && exerciseSession === data.exerciseSession) return data;
-  return { ...data, session, exerciseSession };
+  const barbellSession =
+    data.barbellSession?.date === today || data.barbellSession?.status !== "active"
+      ? data.barbellSession
+      : null;
+  if (
+    session === data.session &&
+    exerciseSession === data.exerciseSession &&
+    barbellSession === data.barbellSession
+  ) {
+    return data;
+  }
+  return { ...data, session, exerciseSession, barbellSession };
 }
 
 export function readStorage(storage: Storage, today: string): SavedData | null {

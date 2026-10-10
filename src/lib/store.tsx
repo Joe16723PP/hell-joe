@@ -9,6 +9,28 @@ import {
   useSyncExternalStore,
   type ReactNode,
 } from "react";
+import { progressAfter, upcomingSession } from "@/lib/barbell";
+import {
+  advanceCheck,
+  buildRecord,
+  confirmCooldown,
+  confirmSafety,
+  confirmWarmup,
+  countRep,
+  extendRest,
+  finishLog,
+  finishRest,
+  finishSet,
+  markTooHeavy,
+  openSession,
+  skipMove,
+  stopForPain,
+  toggleCooldown,
+  toggleSafety,
+  toggleWarmup,
+  useEasier,
+  type BarbellSession,
+} from "@/lib/barbell-session";
 import { LOOSEN_MOVES, type LengthMin, type StretchId } from "@/lib/catalog";
 import {
   BRACE_DOSE,
@@ -46,6 +68,7 @@ import {
   type FinishedStretch,
   type SavedData,
 } from "@/lib/storage";
+import type { BarbellProgress, BarbellRecord } from "@/lib/barbell";
 import {
   advance as advanceSession,
   completeHold as completeSessionHold,
@@ -103,6 +126,35 @@ type Store = {
   advanceExercisePause: () => void;
   skipExercise: () => void;
   useExerciseAlternate: (id: string) => void;
+  barbellSession: BarbellSession | null;
+  barbellRecords: BarbellRecord[];
+  barbellProgress: BarbellProgress;
+  startBarbell: () => void;
+  startBarbellOver: () => void;
+  toggleBarbellSafety: (index: number) => void;
+  confirmBarbellSafety: () => void;
+  toggleBarbellWarmup: (index: number) => void;
+  confirmBarbellWarmup: () => void;
+  advanceBarbellCheck: () => void;
+  countBarbellRep: () => void;
+  finishBarbellSet: (completed: number, reserve: boolean) => void;
+  skipBarbellMove: () => void;
+  markBarbellHeavy: () => void;
+  useBarbellEasier: () => void;
+  extendBarbellRest: () => void;
+  finishBarbellRest: () => void;
+  stopBarbellForPain: () => void;
+  toggleBarbellCooldown: (index: number) => void;
+  confirmBarbellCooldown: () => void;
+  saveBarbellLog: (input: {
+    sleepEnergy: 1 | 2 | 3 | 4 | 5;
+    pain: boolean;
+    soreOver72: boolean;
+    formSlipped: boolean;
+    cue: string;
+    win: string;
+    effortNote: string;
+  }) => void;
 };
 
 const StretchContext = createContext<Store | null>(null);
@@ -220,6 +272,12 @@ function settleExercise(current: SavedData, session: ExerciseSession, today: Dat
   return { ...current, exerciseSession: session, exerciseRecap: recap, exerciseFinished };
 }
 
+function withBarbell(current: SavedData, recipe: (session: BarbellSession) => BarbellSession): SavedData {
+  if (!current.barbellSession) return current;
+  const barbellSession = recipe(current.barbellSession);
+  return barbellSession === current.barbellSession ? current : { ...current, barbellSession };
+}
+
 function withStretchStep(
   current: SavedData,
   step: ReturnType<typeof advanceSession>,
@@ -300,6 +358,7 @@ export function StretchProvider({ children }: { children: ReactNode }) {
       data.exerciseSession?.date === todayKey && data.exerciseSession.status === "active"
         ? data.exerciseSession
         : null;
+    const liveBarbell = data.barbellSession?.date === todayKey ? data.barbellSession : null;
     const finishedDates = () => data.finished.map((entry) => entry.date);
 
     return {
@@ -471,6 +530,47 @@ export function StretchProvider({ children }: { children: ReactNode }) {
           const session = current.exerciseSession;
           if (!session || session.status !== "active") return current;
           return { ...current, exerciseSession: replaceExerciseMove(session, id) };
+        });
+      },
+      barbellSession: liveBarbell,
+      barbellRecords: data.barbellRecords,
+      barbellProgress: data.barbellProgress,
+      startBarbell: () => {
+        if (liveBarbell?.status === "active") return;
+        const { session, progress } = openSession(todayKey, upcomingSession(today).workout, data.barbellProgress);
+        update((current) => ({ ...current, barbellSession: session, barbellProgress: progress }));
+      },
+      startBarbellOver: () => {
+        update((current) => ({ ...current, barbellSession: null }));
+      },
+      toggleBarbellSafety: (index) => update((current) => withBarbell(current, (session) => toggleSafety(session, index))),
+      confirmBarbellSafety: () => update((current) => withBarbell(current, confirmSafety)),
+      toggleBarbellWarmup: (index) => update((current) => withBarbell(current, (session) => toggleWarmup(session, index))),
+      confirmBarbellWarmup: () => update((current) => withBarbell(current, confirmWarmup)),
+      advanceBarbellCheck: () => update((current) => withBarbell(current, advanceCheck)),
+      countBarbellRep: () => update((current) => withBarbell(current, countRep)),
+      finishBarbellSet: (completed, reserve) =>
+        update((current) => withBarbell(current, (session) => finishSet(session, completed, reserve))),
+      skipBarbellMove: () => update((current) => withBarbell(current, skipMove)),
+      markBarbellHeavy: () => update((current) => withBarbell(current, markTooHeavy)),
+      useBarbellEasier: () => update((current) => withBarbell(current, useEasier)),
+      extendBarbellRest: () => update((current) => withBarbell(current, extendRest)),
+      finishBarbellRest: () => update((current) => withBarbell(current, finishRest)),
+      stopBarbellForPain: () => update((current) => withBarbell(current, stopForPain)),
+      toggleBarbellCooldown: (index) =>
+        update((current) => withBarbell(current, (session) => toggleCooldown(session, index))),
+      confirmBarbellCooldown: () => update((current) => withBarbell(current, confirmCooldown)),
+      saveBarbellLog: (input) => {
+        update((current) => {
+          const session = current.barbellSession;
+          if (!session || session.phase !== "log" || session.status !== "active") return current;
+          const record = buildRecord(session, input);
+          return {
+            ...current,
+            barbellSession: finishLog(session),
+            barbellRecords: [...current.barbellRecords.filter((item) => item.date !== record.date), record],
+            barbellProgress: progressAfter(current.barbellProgress, record),
+          };
         });
       },
     };

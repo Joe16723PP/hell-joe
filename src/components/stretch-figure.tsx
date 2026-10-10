@@ -14,12 +14,14 @@ export function figureSrc(id: StretchId, variant: FigureVariant = "hold") {
 
 export function ExerciseFigure({
   id,
+  altName,
   variant = "hold",
   priority = false,
   sizes = "(min-width: 1024px) 480px, 90vw",
   className,
 }: {
   id: string;
+  altName?: string;
   variant?: FigureVariant;
   priority?: boolean;
   sizes?: string;
@@ -27,7 +29,7 @@ export function ExerciseFigure({
 }) {
   const i18n = useI18n();
   const move = getExercise(id);
-  const title = move ? i18n.exercise(move).name : id;
+  const title = altName ?? (move ? i18n.exercise(move).name : id);
   const name = i18n.t(variant === "mistake" ? "figure.exerciseMistake" : "figure.exerciseHold", {
     name: title,
   });

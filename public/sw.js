@@ -1,9 +1,9 @@
-const VERSION = "tuengwa-v1";
+const VERSION = "tuengwa-v2";
 const STATIC_CACHE = `${VERSION}-static`;
 const PAGES_CACHE = `${VERSION}-pages`;
 
 // The app shell. Everything else, including illustrations, is cached as it is used.
-const PRECACHE = ["/", "/library", "/session", "/exercise", "/recap", "/recap/exercise", "/sounds/tick.wav"];
+const PRECACHE = ["/", "/library", "/session", "/exercise", "/barbell", "/recap", "/recap/exercise", "/sounds/tick.wav"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(

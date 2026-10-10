@@ -17,7 +17,9 @@ import {
   type Stretch,
   type TightId,
 } from "@/lib/catalog";
+import type { BarbellMove } from "@/lib/barbell";
 import { type ExerciseMove, type ExercisePreset } from "@/lib/exercise";
+import { BARBELL_TH, type BarbellCopy } from "@/lib/i18n/barbell-th";
 import { PRESETS_TH, STRETCHES_TH, type PresetCopy, type StretchCopy } from "@/lib/i18n/catalog-th";
 import { EXERCISE_PRESETS_TH, EXERCISES_TH } from "@/lib/i18n/exercise-th";
 import { MESSAGES, en, type Locale, type MessageKey } from "@/lib/i18n/messages";
@@ -41,6 +43,7 @@ export type I18n = {
     optionLabel: string;
   };
   exercisePreset: (preset: ExercisePreset) => { name: string; blurb: string };
+  barbell: (move: BarbellMove) => BarbellCopy;
   area: (idOrLabel: string) => string;
   position: (id: PositionId) => string;
   tight: (id: TightId) => string;
@@ -174,6 +177,19 @@ function buildI18n(locale: Locale, setLocale: (locale: Locale) => void): I18n {
       locale === "th"
         ? EXERCISE_PRESETS_TH[preset.id]
         : { name: preset.name, blurb: preset.blurb },
+    barbell: (move) =>
+      locale === "th"
+        ? BARBELL_TH[move.id]
+        : {
+            name: move.name,
+            plain: move.plain,
+            anatomical: move.anatomical,
+            checks: move.checks,
+            pausedCheck: move.pausedCheck,
+            cautions: move.cautions,
+            mistake: move.mistake,
+            harder: move.harder,
+          },
     area,
     position,
     tight: (id) => t(`tight.${id}` as MessageKey),

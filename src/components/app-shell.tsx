@@ -24,6 +24,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const onMove =
     pathname.startsWith("/session") ||
     pathname.startsWith("/exercise") ||
+    pathname.startsWith("/barbell") ||
     /^\/library\/.+/.test(pathname);
   const showNav = ready && settings.setupDone && !onMove;
 
@@ -125,7 +126,13 @@ function LogoMark() {
 
 function isActive(pathname: string, href: string) {
   if (href === "/") {
-    return pathname === "/" || pathname.startsWith("/recap") || pathname === "/session" || pathname === "/exercise";
+    return (
+      pathname === "/" ||
+      pathname.startsWith("/recap") ||
+      pathname === "/session" ||
+      pathname === "/exercise" ||
+      pathname.startsWith("/barbell")
+    );
   }
   return pathname === href || pathname.startsWith(`${href}/`);
 }

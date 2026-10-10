@@ -1,4 +1,6 @@
 import { describe, expect, it } from "vitest";
+import { EMPTY_PROGRESS } from "@/lib/barbell";
+import { openSession } from "@/lib/barbell-session";
 import { EMPTY_DATA, dropStaleSessions, parseData, readStorage, writeStorage, type SavedData } from "@/lib/storage";
 
 class MemoryStorage implements Storage {
@@ -185,6 +187,15 @@ describe("parseData", () => {
     expect(data?.exerciseFinished).toEqual([
       { date: "2026-10-08", patterns: ["front"], option: "core" },
     ]);
+  });
+
+  it("keeps a barbell session and drops a broken one", () => {
+    const { session } = openSession("2026-10-09", "A", EMPTY_PROGRESS);
+    expect(parseData(saved({ barbellSession: session }))?.barbellSession?.workout).toBe("A");
+    expect(parseData(saved({ barbellSession: { date: "soon" } }))?.barbellSession).toBeNull();
+    const data = parseData(saved({ barbellSession: session })) as SavedData;
+    expect(dropStaleSessions(data, "2026-10-10").barbellSession).toBeNull();
+    expect(dropStaleSessions(data, "2026-10-09").barbellSession?.date).toBe("2026-10-09");
   });
 
   it("drops plans that are missing a date or a known family", () => {

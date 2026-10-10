@@ -17,6 +17,7 @@ import {
   Shuffle,
   Sparkles,
 } from "lucide-react";
+import { BarbellCard } from "@/components/barbell-home";
 import { ExerciseCard, ExerciseIntro, RestBrace } from "@/components/exercise-home";
 import { StretchFigure } from "@/components/stretch-figure";
 import { SetupScreen } from "@/components/setup-screen";
@@ -471,6 +472,10 @@ function TodayHome({ onEditSetup }: { onEditSetup: () => void }) {
             </Link>
           )}
         </section>
+      </div>
+
+      <div className="mt-6">
+        <BarbellCard />
       </div>
 
       <div className="mt-8 flex flex-col gap-3 border-t border-border pt-6 sm:flex-row sm:items-center sm:justify-between">
