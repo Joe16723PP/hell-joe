@@ -25,7 +25,7 @@ export function LanguageSwitch() {
             aria-label={item.label}
             onClick={() => setLocale(item.id)}
             className={cn(
-              "min-h-9 min-w-10 rounded-full px-2.5 text-sm font-semibold transition-colors",
+              "min-h-11 min-w-11 rounded-full px-2.5 text-sm font-semibold transition-colors",
               active ? "bg-primary text-primary-foreground" : "text-foreground/70 hover:bg-muted",
             )}
           >

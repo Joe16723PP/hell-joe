@@ -17,7 +17,7 @@ import {
   Shuffle,
   Sparkles,
 } from "lucide-react";
-import { ExerciseCard, ExerciseIntro, RestBrace, doseLine } from "@/components/exercise-home";
+import { ExerciseCard, ExerciseIntro, RestBrace } from "@/components/exercise-home";
 import { StretchFigure } from "@/components/stretch-figure";
 import { SetupScreen } from "@/components/setup-screen";
 import { WeekStrip } from "@/components/week-strip";
@@ -38,7 +38,6 @@ import {
   getStretch,
   holdSecondsForLength,
 } from "@/lib/catalog";
-import { exerciseMoveIds, presetIdFor } from "@/lib/exercise";
 import { useI18n } from "@/lib/i18n/provider";
 import {
   currentStreak,
@@ -132,10 +131,6 @@ function TodayHome({ onEditSetup }: { onEditSetup: () => void }) {
   const exerciseStreak = currentStreak(exerciseDates, settings.restDay, today);
   const exerciseInProgress = exerciseSession?.kind === "exercise";
   const exerciseDone = exerciseDates.includes(todayKey) && !exerciseInProgress;
-  const exercisePresetId = presetIdFor(settings.exerciseOption, exerciseFamily);
-  const exerciseIds = exerciseInProgress
-    ? exerciseSession.moveIds
-    : exerciseMoveIds(exercisePresetId, settings.exerciseLength);
   const hasFinished = finished.length > 0;
   const doneToday = finishedDates.includes(todayKey) && !inProgress;
   const weekAreas = recentAreas(finished, today);
@@ -278,31 +273,7 @@ function TodayHome({ onEditSetup }: { onEditSetup: () => void }) {
                       {t("home.startOver")}
                     </Button>
                   )}
-                  {settings.exerciseOn && (
-                    <Button
-                      type="button"
-                      size="lg"
-                      variant="outline"
-                      onClick={() => beginExercise("exercise")}
-                      className="h-14 rounded-2xl border-white/40 bg-white/10 px-7 text-lg font-semibold whitespace-normal text-white hover:bg-white/20 hover:text-white"
-                    >
-                      <Play className="size-5 fill-current" aria-hidden />
-                      {exerciseInProgress
-                        ? t("home.exerciseResume", {
-                            current: exerciseSession.index + 1,
-                            total: exerciseSession.moveIds.length,
-                          })
-                        : exerciseDone
-                          ? t("home.exerciseDone")
-                          : t("home.exerciseStart")}
-                    </Button>
-                  )}
                 </div>
-                {settings.exerciseOn && !exerciseDone && !exerciseInProgress && (
-                  <p className="mt-3 text-sm text-white/85">
-                    {doseLine(t, settings.exerciseOption, settings.exerciseLength, exerciseIds)}
-                  </p>
-                )}
                 <button
                   type="button"
                   onClick={() => setViewingRest(true)}

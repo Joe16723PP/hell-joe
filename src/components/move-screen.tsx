@@ -243,10 +243,17 @@ function MoveView({
   const needsOther = stretch.sided && sideDone && !sides[otherSide];
   const [formOpen, setFormOpen] = useState(false);
   const [skipOpen, setSkipOpen] = useState(false);
+  const [holdLive, setHoldLive] = useState(false);
   const frozen = formOpen || skipOpen;
+  const timerPinned = holdLive || sideDone;
 
   return (
-    <main className="mx-auto w-full max-w-6xl px-4 py-4 pb-44 md:px-8 md:py-8 md:pb-10">
+    <main
+      className={cn(
+        "mx-auto w-full max-w-6xl px-4 py-4 md:px-8 md:py-8 md:pb-10",
+        timerPinned ? "pb-44" : "pb-8",
+      )}
+    >
       <div className="flex items-center justify-between gap-3">
         <p className="text-sm font-semibold text-primary">{kicker}</p>
         <Link
@@ -351,7 +358,13 @@ function MoveView({
             </p>
           </section>
 
-          <SideStatus stretch={stretch} side={side} sides={sides} onSetSide={onSetSide} />
+          <SideStatus
+            stretch={stretch}
+            side={side}
+            sides={sides}
+            locked={holdLive}
+            onSetSide={onSetSide}
+          />
 
           <HoldControls
             key={`${stretch.id}-${side}`}
@@ -366,6 +379,7 @@ function MoveView({
             onSwitch={() => onSetSide(otherSide)}
             onNext={onNext}
             frozen={frozen}
+            onLiveChange={setHoldLive}
           />
 
           <div className="mt-4 flex flex-col gap-2 sm:flex-row">
@@ -390,11 +404,13 @@ function SideStatus({
   stretch,
   side,
   sides,
+  locked,
   onSetSide,
 }: {
   stretch: Stretch;
   side: Side;
   sides: { left: boolean; right: boolean };
+  locked: boolean;
   onSetSide: (side: Side) => void;
 }) {
   const { t } = useI18n();
@@ -406,41 +422,41 @@ function SideStatus({
       </p>
     );
   }
-  const untouched = !sides.left && !sides.right;
   return (
-    <div className="mt-5">
-      <div className="flex gap-2">
-        {(["left", "right"] as Side[]).map((item) => {
-          const done = sides[item];
-          const current = item === side;
+    <div className="mt-5 flex gap-2" role="group" aria-label={t("move.sideChoice")}>
+      {(["left", "right"] as Side[]).map((item) => {
+        const done = sides[item];
+        const current = item === side;
+        const className = cn(
+          "inline-flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-2xl border-2 px-3 text-sm font-semibold sm:flex-none sm:px-5",
+          done
+            ? "border-primary bg-primary text-primary-foreground"
+            : current
+              ? "border-primary text-primary"
+              : "border-border text-muted-foreground",
+        );
+        const label = item === "left" ? t("move.left") : t("move.right");
+        if (locked) {
           return (
-            <span
-              key={item}
-              className={cn(
-                "inline-flex min-h-10 flex-1 items-center justify-center gap-1.5 rounded-2xl border-2 px-3 text-sm font-semibold sm:flex-none sm:px-5",
-                done
-                  ? "border-primary bg-primary text-primary-foreground"
-                  : current
-                    ? "border-primary text-primary"
-                    : "border-border text-muted-foreground",
-              )}
-              aria-current={current ? "step" : undefined}
-            >
+            <span key={item} className={className} aria-current={current ? "step" : undefined}>
               {done && <Check className="size-4" strokeWidth={3} aria-hidden />}
-              {item === "left" ? t("move.left") : t("move.right")}
+              {label}
             </span>
           );
-        })}
-      </div>
-      {untouched && side === "left" && (
-        <button
-          type="button"
-          className="mt-1 inline-flex min-h-11 items-center text-sm font-medium text-primary underline-offset-4 hover:underline"
-          onClick={() => onSetSide("right")}
-        >
-          {t("move.startRight")}
-        </button>
-      )}
+        }
+        return (
+          <button
+            key={item}
+            type="button"
+            className={className}
+            aria-pressed={current}
+            onClick={() => onSetSide(item)}
+          >
+            {done && <Check className="size-4" strokeWidth={3} aria-hidden />}
+            {label}
+          </button>
+        );
+      })}
     </div>
   );
 }
@@ -497,6 +513,7 @@ function HoldControls({
   onSwitch,
   onNext,
   frozen,
+  onLiveChange,
 }: {
   seconds: number;
   sideDone: boolean;
@@ -509,6 +526,7 @@ function HoldControls({
   onSwitch: () => void;
   onNext: (() => void) | null;
   frozen: boolean;
+  onLiveChange: (live: boolean) => void;
 }) {
   const { t } = useI18n();
   const [total, setTotal] = useState(seconds);
@@ -564,6 +582,11 @@ function HoldControls({
   const ringTotal = pauseShown !== null ? POSE_PAUSE_SECONDS : total;
   const caption = running ? t("move.ringHolding") : sideDone ? t("move.ringDone") : t("move.ringReady");
   const pauseLabel = pauseShown !== null ? t("move.nextIn", { count: pauseShown }) : null;
+  const pinMobile = running || pauseShown !== null || sideDone;
+
+  useEffect(() => {
+    onLiveChange(running || pauseShown !== null);
+  }, [onLiveChange, pauseShown, running]);
 
   const actions = (compact: boolean) => (
     <div className={cn("flex flex-wrap gap-2", compact && "justify-end")}>
@@ -629,7 +652,14 @@ function HoldControls({
           {actions(false)}
         </div>
       </div>
-      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-card/95 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-[0_-8px_30px_-12px_rgb(14_122_103/0.25)] backdrop-blur-xl md:hidden">
+      <div
+        className={cn(
+          "md:hidden",
+          pinMobile
+            ? "fixed inset-x-0 bottom-0 z-30 border-t border-border bg-card/95 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-[0_-8px_30px_-12px_rgb(14_122_103/0.25)] backdrop-blur-xl"
+            : "mt-5 rounded-3xl border border-border bg-card p-5 shadow-sm",
+        )}
+      >
         <div className="mx-auto flex max-w-lg items-center gap-3">
           <HoldRing value={ringValue} total={ringTotal} size={68} tone={tone}>
             <p className="font-heading text-base font-semibold tabular-nums" aria-hidden>

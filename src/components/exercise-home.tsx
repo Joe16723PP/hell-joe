@@ -183,11 +183,8 @@ export function ExerciseCard({
           <Button type="button" size="lg" className="h-12 rounded-2xl px-5 font-semibold" onClick={begin}>
             <Play className="size-4 fill-current" aria-hidden />
             {inProgress
-              ? t("home.exerciseResume", {
-                  current: session.index + 1,
-                  total: session.moveIds.length,
-                })
-              : t("home.exerciseStart")}
+              ? t("home.exerciseResume", { name: presetCopy.name })
+              : t("home.exerciseStart", { name: presetCopy.name })}
           </Button>
         )}
         {inProgress && (

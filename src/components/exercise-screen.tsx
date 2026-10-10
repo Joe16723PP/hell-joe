@@ -188,6 +188,7 @@ function ExerciseRunner({
   const move = getExercise(id);
   const [formOpen, setFormOpen] = useState(false);
   const [skipOpen, setSkipOpen] = useState(false);
+  const [holdRunning, setHoldRunning] = useState(false);
   const frozen = formOpen || skipOpen;
 
   if (!move) {
@@ -197,6 +198,7 @@ function ExerciseRunner({
   const copy = i18n.exercise(move);
   const alternate = alternateExercise(move.id, session.moveIds);
   const pausing = session.phase !== "work";
+  const pinMobile = pausing || holdRunning || session.reps > 0;
   const pace =
     move.effort === "hold"
       ? t("exercise.holdFor", { count: session.holdSeconds })
@@ -205,7 +207,12 @@ function ExerciseRunner({
         : t("exercise.paceCore");
 
   return (
-    <main className="mx-auto w-full max-w-6xl px-4 py-4 pb-52 md:px-8 md:py-8 md:pb-10">
+    <main
+      className={cn(
+        "mx-auto w-full max-w-6xl px-4 py-4 md:px-8 md:py-8 md:pb-10",
+        pinMobile ? "pb-52" : "pb-8",
+      )}
+    >
       <div className="flex items-center justify-between gap-3">
         <p className="text-sm font-semibold text-primary">
           {t("move.kicker", { current: session.index + 1, total: session.moveIds.length })}
@@ -271,7 +278,13 @@ function ExerciseRunner({
             {t("exercise.pain")}
           </p>
 
-          <div className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-card/95 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-[0_-8px_30px_-12px_rgb(14_122_103/0.25)] backdrop-blur-xl md:static md:z-auto md:mt-4 md:border-0 md:bg-transparent md:p-0 md:shadow-none">
+          <div
+            className={cn(
+              pinMobile
+                ? "fixed inset-x-0 bottom-0 z-30 border-t border-border bg-card/95 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-[0_-8px_30px_-12px_rgb(14_122_103/0.25)] backdrop-blur-xl md:static md:z-auto md:mt-4 md:border-0 md:bg-transparent md:p-0 md:shadow-none"
+                : "mt-5 md:mt-4",
+            )}
+          >
             {pausing ? (
               <Countdown
                 key={`${session.phase}-${session.index}-${session.setIndex}-${session.side}`}
@@ -293,6 +306,7 @@ function ExerciseRunner({
                 seconds={session.holdSeconds}
                 frozen={frozen}
                 onFinish={onFinish}
+                onRunningChange={setHoldRunning}
               />
             )}
             <div className="mt-2 flex gap-2">
@@ -359,10 +373,12 @@ function HoldControls({
   seconds,
   frozen,
   onFinish,
+  onRunningChange,
 }: {
   seconds: number;
   frozen: boolean;
   onFinish: () => void;
+  onRunningChange: (running: boolean) => void;
 }) {
   const { t } = useI18n();
   const hold = useCountdown(seconds, {
@@ -376,6 +392,11 @@ function HoldControls({
   });
   useWakeLock(hold.active);
   const { remaining, running } = hold;
+
+  useEffect(() => {
+    onRunningChange(running);
+    return () => onRunningChange(false);
+  }, [onRunningChange, running]);
 
   useEffect(() => {
     primeHoldTick();
