@@ -4,12 +4,13 @@ import Image from "next/image";
 import { getStretch, type StretchId } from "@/lib/catalog";
 import { getExercise } from "@/lib/exercise";
 import { useI18n } from "@/lib/i18n/provider";
+import { publicPath } from "@/lib/public-path";
 import { cn } from "@/lib/utils";
 
 export type FigureVariant = "hold" | "mistake";
 
 export function figureSrc(id: StretchId, variant: FigureVariant = "hold") {
-  return `/illustrations/${id}${variant === "mistake" ? "-mistake" : ""}.webp`;
+  return publicPath(`/illustrations/${id}${variant === "mistake" ? "-mistake" : ""}.webp`);
 }
 
 export function ExerciseFigure({
@@ -35,7 +36,9 @@ export function ExerciseFigure({
   });
   return (
     <Image
-      src={`/illustrations/exercise/${id}${variant === "mistake" ? "-mistake" : ""}.webp`}
+      src={publicPath(
+        `/illustrations/exercise/${id}${variant === "mistake" ? "-mistake" : ""}.webp`,
+      )}
       alt={name}
       width={720}
       height={720}

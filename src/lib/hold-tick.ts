@@ -1,4 +1,6 @@
-const TICK_SRC = "/sounds/tick.wav";
+import { publicPath } from "@/lib/public-path";
+
+const TICK_SRC = publicPath("/sounds/tick.wav");
 const TICK_VOLUME = 0.35;
 
 let tickAudio: HTMLAudioElement | null = null;
