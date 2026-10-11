@@ -1,6 +1,17 @@
 import { ExerciseLibraryMove } from "@/components/exercise-screen";
 import { LibraryMove } from "@/components/move-screen";
-import { getExercise } from "@/lib/exercise";
+import { STRETCHES } from "@/lib/catalog";
+import { EXERCISE_MOVES, getExercise } from "@/lib/exercise";
+
+export const dynamicParams = false;
+
+export function generateStaticParams() {
+  const ids = new Set([
+    ...STRETCHES.map((stretch) => stretch.id),
+    ...EXERCISE_MOVES.map((move) => move.id),
+  ]);
+  return [...ids].map((id) => ({ id }));
+}
 
 export default async function Page({
   params,

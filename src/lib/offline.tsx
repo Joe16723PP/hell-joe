@@ -8,6 +8,7 @@ export function useOffline() {
   useEffect(() => {
     if (process.env.NODE_ENV !== "production") return;
     if (!("serviceWorker" in navigator)) return;
-    void navigator.serviceWorker.register("/sw.js").catch(() => {});
+    const base = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
+    void navigator.serviceWorker.register(`${base}/sw.js`).catch(() => {});
   }, []);
 }

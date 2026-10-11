@@ -1,9 +1,24 @@
-const VERSION = "tuengwa-v2";
+const VERSION = "tuengwa-v3";
 const STATIC_CACHE = `${VERSION}-static`;
 const PAGES_CACHE = `${VERSION}-pages`;
 
-// The app shell. Everything else, including illustrations, is cached as it is used.
-const PRECACHE = ["/", "/library", "/session", "/exercise", "/barbell", "/recap", "/recap/exercise", "/sounds/tick.wav"];
+// The worker is served from the site root, including a GitHub Pages project path.
+const BASE = new URL("./", self.location).pathname.replace(/\/$/, "");
+
+const PAGES = ["/", "/library", "/session", "/exercise", "/barbell", "/recap", "/recap/exercise"];
+const FILES = ["/sounds/tick.wav"];
+
+function pagePath(path) {
+  if (path === "/") return BASE ? `${BASE}/` : "/";
+  return `${BASE}${path}/`;
+}
+
+function filePath(path) {
+  return `${BASE}${path}`;
+}
+
+const PRECACHE = [...PAGES.map(pagePath), ...FILES.map(filePath)];
+const HOME = pagePath("/");
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
@@ -41,11 +56,12 @@ self.addEventListener("fetch", (event) => {
 });
 
 function isStaticAsset(pathname) {
+  const path = BASE && pathname.startsWith(BASE) ? pathname.slice(BASE.length) : pathname;
   return (
-    pathname.startsWith("/illustrations/") ||
-    pathname.startsWith("/icons/") ||
-    pathname.startsWith("/sounds/") ||
-    pathname.startsWith("/_next/static/")
+    path.startsWith("/illustrations/") ||
+    path.startsWith("/icons/") ||
+    path.startsWith("/sounds/") ||
+    path.startsWith("/_next/static/")
   );
 }
 
@@ -59,7 +75,7 @@ async function page(request) {
       if (response.ok) void cache.put(request, response.clone());
       return response;
     })
-    .catch(() => cached ?? caches.match("/"));
+    .catch(() => cached ?? caches.match(HOME));
   return cached ?? network;
 }
 
