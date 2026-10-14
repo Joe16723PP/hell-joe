@@ -1,3 +1,4 @@
+
 export type AreaId =
   | "neck"
   | "shoulders"

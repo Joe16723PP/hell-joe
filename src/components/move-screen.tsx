@@ -17,6 +17,8 @@ import {
   X,
 } from "lucide-react";
 import { FormCompare } from "@/components/form-check";
+import { MoveDemo } from "@/components/move-demo";
+import { getMoveDemoFrames } from "@/lib/move-demo";
 import { StretchFigure } from "@/components/stretch-figure";
 import { Button, buttonVariants } from "@/components/ui/button";
 import {
@@ -300,6 +302,7 @@ function MoveView({
             )}
             <StretchFigure id={stretch.id} mirror={mirror} priority className="mx-auto max-w-md" />
           </div>
+          <MoveDemo name={copy.name} frames={getMoveDemoFrames("stretch", stretch.id)} />
           {copy.setup && (
             <figure className="mt-3 flex items-center gap-3 rounded-3xl border border-border bg-card p-3 shadow-sm">
               <div className="grid size-12 shrink-0 place-items-center rounded-2xl bg-secondary text-primary">

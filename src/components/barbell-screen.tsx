@@ -4,6 +4,8 @@ import { useState } from "react";
 import Link from "next/link";
 import { Check, HeartPulse, X } from "lucide-react";
 import { ExerciseFigure } from "@/components/stretch-figure";
+import { MoveDemo } from "@/components/move-demo";
+import { getMoveDemoFrames } from "@/lib/move-demo";
 import { Button } from "@/components/ui/button";
 import { displayedChecks, getBarbellMove } from "@/lib/barbell";
 import type { BarbellSession } from "@/lib/barbell-session";
@@ -202,8 +204,11 @@ function Move({ session }: { session: BarbellSession }) {
         {t("barbell.setOf", { current: session.setIndex + 1, total: slot.sets })}
       </p>
       <div className="mt-5 grid items-start gap-6 lg:grid-cols-2 lg:gap-10">
-        <div className="overflow-hidden rounded-[2rem] border border-border stage p-2 shadow-sm sm:p-4 lg:sticky lg:top-24">
-          <ExerciseFigure id={move.figure} altName={copy.name} priority className="mx-auto max-w-md" />
+        <div className="lg:sticky lg:top-24">
+          <div className="overflow-hidden rounded-[2rem] border border-border stage p-2 shadow-sm sm:p-4">
+            <ExerciseFigure id={move.figure} altName={copy.name} priority className="mx-auto max-w-md" />
+          </div>
+          <MoveDemo name={copy.name} frames={getMoveDemoFrames("barbell", move.id)} />
         </div>
         <div>
           <h1 className="text-4xl font-semibold text-balance">{copy.name}</h1>

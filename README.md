@@ -52,6 +52,12 @@ Progress and the language choice are saved in this browser’s localStorage.
 - The exercise illustrations live in `public/illustrations/exercise/`, named the same way: `{id}.webp` and `{id}-mistake.webp`.
 - The Check your form dialog draws arrows, dashed guide lines, and labels on top of the renders. Positions per stretch live in `src/lib/form-cues.ts` as percentages of the square image. Label text comes from the `cue.*` keys in `messages.ts`.
 
+## Movement examples
+
+- Every stretch, exercise, and barbell-plan move has a four-frame WebP example under `public/illustrations/demos/{stretch|exercise|barbell}/`. Frames use `{move-id}-1.webp` through `{move-id}-4.webp`; `getMoveDemoFrames` resolves the sequence from each move ID.
+- The first frame loads with the move screen. The remaining frames are requested as playback advances. The service worker caches requested illustration assets for later offline use.
+- Reduced-motion users step through frames manually. Barbell substitutions reuse the matching bodyweight example when the movement is the same.
+
 ## Stack
 
 Next.js, TypeScript, Tailwind CSS, shadcn/ui, and lucide icons. Fonts: Outfit and Plus Jakarta Sans for Latin text, Prompt and Anuphan for Thai.

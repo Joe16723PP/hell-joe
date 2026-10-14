@@ -5,6 +5,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeftRight, Check, Flag, HeartPulse, Play, Plus, ScanEye, SkipForward, X } from "lucide-react";
 import { ExerciseFigure } from "@/components/stretch-figure";
+import { MoveDemo } from "@/components/move-demo";
+import { getMoveDemoFrames } from "@/lib/move-demo";
 import { Button, buttonVariants } from "@/components/ui/button";
 import {
   Dialog,
@@ -229,14 +231,17 @@ function ExerciseRunner({
       </div>
 
       <div className="mt-5 grid items-start gap-6 lg:grid-cols-2 lg:gap-10">
-        <div className="relative overflow-hidden rounded-[2rem] border border-border stage p-2 shadow-sm sm:p-4 lg:sticky lg:top-24">
-          {move.sided && (
-            <span className="absolute top-4 left-4 z-10 inline-flex items-center gap-1.5 rounded-full bg-card/90 px-3 py-1.5 text-sm font-semibold shadow-sm backdrop-blur">
-              <ArrowLeftRight className="size-4 text-primary" aria-hidden />
-              {session.side === "left" ? t("move.leftSide") : t("move.rightSide")}
-            </span>
-          )}
-          <ExerciseFigure id={move.id} priority className="mx-auto max-w-md" />
+        <div className="lg:sticky lg:top-24">
+          <div className="relative overflow-hidden rounded-[2rem] border border-border stage p-2 shadow-sm sm:p-4">
+            {move.sided && (
+              <span className="absolute top-4 left-4 z-10 inline-flex items-center gap-1.5 rounded-full bg-card/90 px-3 py-1.5 text-sm font-semibold shadow-sm backdrop-blur">
+                <ArrowLeftRight className="size-4 text-primary" aria-hidden />
+                {session.side === "left" ? t("move.leftSide") : t("move.rightSide")}
+              </span>
+            )}
+            <ExerciseFigure id={move.id} priority className="mx-auto max-w-md" />
+          </div>
+          <MoveDemo name={copy.name} frames={getMoveDemoFrames("exercise", move.id)} />
         </div>
 
         <div>
