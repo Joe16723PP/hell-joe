@@ -112,3 +112,10 @@ Content and docs (2/10):
 - [x] Note in the README that the exercise illustrations live in `public/illustrations/exercise/`.
 - [x] Set normal file permissions (`644`) on the new exercise webp files. They are currently `600`.
 - [x] Update the metadata description so it mentions the exercise session.
+
+## Pose example review (October 2026)
+
+- [x] Reassign the four swapped sequences: standing chest opener, doorway chest stretch, cat stretch, and thread the needle.
+- [x] Make the chin-tuck movement visible while keeping the eyes level; use neutral, tucked, held, neutral frames.
+- [x] Start the low-lunge example in the kneeling lunge position described by its instructions.
+- Validation: `npm run check` passed with Node 22.23.2 (typecheck, lint, 347 tests, and production build).
